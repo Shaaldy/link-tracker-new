@@ -37,3 +37,7 @@ build/
 .env
 .env.*
 !.env.example
+
+### Logs ###
+/bot/logs/bot.log
+/scrapper/logs/scrapper.log
