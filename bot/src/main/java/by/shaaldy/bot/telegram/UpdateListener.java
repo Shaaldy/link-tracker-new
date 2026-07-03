@@ -7,6 +7,8 @@ import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 
 import by.shaaldy.bot.command.CommandDispatcher;
+import by.shaaldy.bot.dialog.DialogHandler;
+import by.shaaldy.bot.dialog.DialogStateHolder;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,8 @@ public class UpdateListener {
   private final TelegramBot telegramBot;
   private final MessageSender messageSender;
   private final CommandDispatcher commandDispatcher;
+  private final DialogStateHolder dialogStateHolder;
+  private final DialogHandler dialogHandler;
 
   @PostConstruct
   public void start() {
@@ -37,7 +41,10 @@ public class UpdateListener {
     String text = update.message().text();
     log.info("Received message from chat {}: {}", chatId, text);
 
-    String response = commandDispatcher.dispatch(chatId, text);
+    String response =
+        dialogStateHolder.isInDialog(chatId)
+            ? dialogHandler.handle(chatId, text)
+            : commandDispatcher.dispatch(chatId, text);
     messageSender.send(chatId, response);
   }
 }
