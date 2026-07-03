@@ -34,6 +34,9 @@
                 <version>2.46.1</version>
                 <configuration>
                     <java>
+                        <excludes>
+                            <exclude>**/generated-sources/**</exclude>
+                        </excludes>
                         <googleJavaFormat>
                             <version>1.28.0</version>
                         </googleJavaFormat>
