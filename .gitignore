@@ -41,3 +41,5 @@ build/
 ### Logs ###
 /bot/logs/bot.log
 /scrapper/logs/scrapper.log
+/logs/bot.log
+/logs/scrapper.log
