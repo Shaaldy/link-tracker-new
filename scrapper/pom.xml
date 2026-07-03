@@ -68,6 +68,18 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.openapitools</groupId>
                 <artifactId>openapi-generator-maven-plugin</artifactId>
                 <version>7.23.0</version>
@@ -110,7 +122,7 @@
                             <generateSupportingFiles>false</generateSupportingFiles>
                             <generateModelTests>false</generateModelTests>
                             <generateModelDocumentation>false</generateModelDocumentation>
-                            <modelPackage>by.shaaldy.bot.dto.scrapper</modelPackage>
+                            <modelPackage>by.shaaldy.scrapper.dto.scrapper</modelPackage>
                             <configOptions>
                                 <useSpringBoot3>true</useSpringBoot3>
                                 <useJakartaEe>true</useJakartaEe>
