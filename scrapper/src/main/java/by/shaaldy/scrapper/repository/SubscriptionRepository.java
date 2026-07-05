@@ -1,6 +1,7 @@
 package by.shaaldy.scrapper.repository;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -26,4 +27,6 @@ public interface SubscriptionRepository {
 
   /* --- reverse: для Stage 3 планировщика --- */
   Set<Long> findSubscribers(URI url); // кто подписан на ссылку
+
+  Collection<URI> findAllUrls();
 }
