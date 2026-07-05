@@ -43,3 +43,7 @@ build/
 /scrapper/logs/scrapper.log
 /logs/bot.log
 /logs/scrapper.log
+/bot/logs/bot.log.2026-07-02.0.gz
+/scrapper/logs/scrapper.log.2026-07-02.0.gz
+*.log
+

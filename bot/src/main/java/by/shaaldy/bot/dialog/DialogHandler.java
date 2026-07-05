@@ -1,9 +1,17 @@
 package by.shaaldy.bot.dialog;
 
+import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 
+import by.shaaldy.bot.client.ScrapperApiException;
+import by.shaaldy.bot.client.ScrapperClient;
+import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
+import by.shaaldy.bot.dto.scrapper.LinkResponse;
+import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -14,6 +22,7 @@ public class DialogHandler {
 
   private static final String SKIP = "-";
 
+  private final ScrapperClient scrapperClient;
   private final DialogStateHolder holder;
 
   public String handle(long chatId, String text) {
@@ -42,22 +51,41 @@ public class DialogHandler {
   }
 
   private String onFilters(long chatId, DialogContext ctx, String text) {
-    // TODO(stage-5): отправить ссылку/тэги/фильтры в scrapper через ScrapperClient
-    String summary =
-        "Ссылка добавлена (заглушка):\n"
-            + "URL: "
-            + ctx.getLink()
-            + "\n"
-            + "Тэги: "
-            + ctx.getTags();
-    holder.reset(chatId);
-    return summary;
+    List<String> filters =
+        text.trim().equals(SKIP) ? List.of() : Arrays.stream(text.trim().split("\\s+")).toList();
+    List<String> tags = ctx.getTags() == null ? List.of() : ctx.getTags();
+    try {
+      AddLinkRequest request =
+          new AddLinkRequest().link(URI.create(ctx.getLink())).tags(tags).filters(filters);
+      LinkResponse added = scrapperClient.addLink(chatId, request);
+      return "Ссылка добавлена: " + added.getUrl();
+    } catch (ScrapperApiException e) {
+      if (e.getStatus().value() == 409) return "Эта ссылка уже отслеживается.";
+      if (e.getStatus().value() == 404) return "Сначала зарегистрируйтесь: /start.";
+      return e.userMessage();
+    } catch (IllegalArgumentException e) {
+      return "Некорректная ссылка.";
+    } catch (RestClientException e) {
+      return "Сервис временно недоступен, попробуйте позже.";
+    } finally {
+      holder.reset(chatId);
+    }
   }
 
   private String onUntrack(long chatId, String text) {
-    // TODO(stage-5): удалить ссылку через ScrapperClient
-    String result = "Ссылка удалена (заглушка): " + text.trim();
-    holder.reset(chatId);
-    return result;
+    try {
+      RemoveLinkRequest request = new RemoveLinkRequest().link(URI.create(text.trim()));
+      LinkResponse removed = scrapperClient.removeLink(chatId, request);
+      return "Ссылка удалена: " + removed.getUrl();
+    } catch (ScrapperApiException e) {
+      if (e.getStatus().value() == 404) return "Эта ссылка не отслеживается.";
+      return e.userMessage();
+    } catch (IllegalArgumentException e) {
+      return "Некорректная ссылка.";
+    } catch (RestClientException e) {
+      return "Сервис временно недоступен, попробуйте позже.";
+    } finally {
+      holder.reset(chatId);
+    }
   }
 }

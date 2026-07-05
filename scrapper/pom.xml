@@ -96,7 +96,7 @@
                             <generateSupportingFiles>false</generateSupportingFiles>
                             <generateModelTests>false</generateModelTests>
                             <generateModelDocumentation>false</generateModelDocumentation>
-                            <modelPackage>by.shaaldy.bot.dto.bot</modelPackage>
+                            <modelPackage>by.shaaldy.scrapper.dto.bot</modelPackage>
                             <configOptions>
                                 <useSpringBoot3>true</useSpringBoot3>
                                 <useJakartaEe>true</useJakartaEe>
