@@ -3,6 +3,7 @@ package by.shaaldy.scrapper.service;
 import java.net.URI;
 import java.util.List;
 
+import by.shaaldy.scrapper.validation.LinkValidator;
 import org.springframework.stereotype.Service;
 
 import by.shaaldy.scrapper.domain.TrackedLink;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class SubscriptionService {
   private final SubscriptionRepository repository;
+  private final LinkValidator linkValidator;
 
   /* --- chats --- */
 
@@ -41,6 +43,7 @@ public class SubscriptionService {
   /* --- links --- */
 
   public TrackedLink addLink(long chatId, URI url, List<String> tags, List<String> filters) {
+    linkValidator.validate(url);
     requireChat(chatId);
     if (repository.subscriptionExists(chatId, url)) {
       log.debug("Чат {} уже отслеживает {}", chatId, url);
@@ -53,6 +56,7 @@ public class SubscriptionService {
 
   public TrackedLink removeLink(long chatId, URI url) {
     requireChat(chatId);
+    linkValidator.validate(url);
     TrackedLink removed =
         repository.findLinksByChat(chatId).stream()
             .filter(link -> link.url().equals(url))
