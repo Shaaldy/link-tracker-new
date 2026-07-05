@@ -3,7 +3,6 @@ package by.shaaldy.scrapper.service;
 import java.net.URI;
 import java.util.List;
 
-import by.shaaldy.scrapper.validation.LinkValidator;
 import org.springframework.stereotype.Service;
 
 import by.shaaldy.scrapper.domain.TrackedLink;
@@ -12,6 +11,7 @@ import by.shaaldy.scrapper.exception.ChatNotFoundException;
 import by.shaaldy.scrapper.exception.LinkAlreadyTrackedException;
 import by.shaaldy.scrapper.exception.LinkNotFoundException;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
+import by.shaaldy.scrapper.validation.LinkValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

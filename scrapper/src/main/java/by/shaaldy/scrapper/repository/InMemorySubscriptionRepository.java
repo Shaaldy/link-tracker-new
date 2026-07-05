@@ -2,10 +2,7 @@ package by.shaaldy.scrapper.repository;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -155,6 +152,11 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
     }
     Set<Long> subscribers = subscribersByLink.get(link.id());
     return subscribers == null ? Set.of() : Set.copyOf(subscribers);
+  }
+
+  @Override
+  public Collection<URI> findAllUrls() {
+    return Set.copyOf(linksByUrl.keySet());
   }
 
   /* ------------------------- helpers ------------------------- */
