@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import by.shaaldy.scrapper.domain.Link;
 import by.shaaldy.scrapper.domain.TrackedLink;
 
 public interface SubscriptionRepository {
@@ -30,7 +31,7 @@ public interface SubscriptionRepository {
   Set<Long> findSubscribers(URI url); // кто подписан на ссылку
 
   /* --- для планировщика --- */
-  Collection<URI> findAllUrls();
+  Collection<Link> findAllLinks();
 
   Instant getCheckedAt(URI url);
 

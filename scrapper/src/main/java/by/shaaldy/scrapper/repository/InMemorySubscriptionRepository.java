@@ -147,11 +147,6 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
   }
 
   @Override
-  public Collection<URI> findAllUrls() {
-    return Set.copyOf(linksByUrl.keySet());
-  }
-
-  @Override
   public Instant getCheckedAt(URI url) {
     return checkedAtByUrl.get(url);
   }
@@ -159,6 +154,11 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
   @Override
   public void updateCheckedAt(URI url, Instant checkedAt) {
     checkedAtByUrl.put(url, checkedAt);
+  }
+
+  @Override
+  public Collection<Link> findAllLinks() {
+    return List.copyOf(linksByUrl.values());
   }
 
   /* ------------------------- helpers ------------------------- */
