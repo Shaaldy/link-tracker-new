@@ -1,4 +1,4 @@
-package by.shaaldy.scrapper.client;
+package by.shaaldy.scrapper.client.bot;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
