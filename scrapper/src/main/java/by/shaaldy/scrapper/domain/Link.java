@@ -3,11 +3,13 @@ package by.shaaldy.scrapper.domain;
 import java.net.URI;
 import java.time.Instant;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@Builder
 public final class Link {
 
   private final long id;
