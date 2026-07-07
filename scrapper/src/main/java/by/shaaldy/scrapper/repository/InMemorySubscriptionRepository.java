@@ -8,28 +8,19 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Repository;
 
+import by.shaaldy.scrapper.domain.Link;
 import by.shaaldy.scrapper.domain.TrackedLink;
 
 @Repository
 public class InMemorySubscriptionRepository implements SubscriptionRepository {
 
-  /** Генератор суррогатных id ссылок (аналог BIGSERIAL). */
   private final AtomicLong linkIdSeq = new AtomicLong();
-
-  /** Аналог таблицы chats: множество зарегистрированных чатов. */
   private final Set<Long> chats = ConcurrentHashMap.newKeySet();
-
-  /** Аналог таблицы links: url -> ссылка (глобально уникальна по url). */
-  private final Map<URI, StoredLink> linksByUrl = new ConcurrentHashMap<>();
-
-  /** Обратный индекс по id ссылки (для Stage 3: checked_at, обход). */
-  private final Map<Long, StoredLink> linksById = new ConcurrentHashMap<>();
-
-  /** Аналог chat_links: chatId -> (linkId -> подписка с tags/filters). */
+  private final Map<URI, Link> linksByUrl = new ConcurrentHashMap<>();
+  private final Map<Long, Link> linksById = new ConcurrentHashMap<>();
   private final Map<Long, Map<Long, Subscription>> subsByChat = new ConcurrentHashMap<>();
-
-  /** Обратный индекс: linkId -> подписчики (для Stage 3 планировщика). */
   private final Map<Long, Set<Long>> subscribersByLink = new ConcurrentHashMap<>();
+  private final Map<URI, Instant> checkedAtByUrl = new ConcurrentHashMap<>();
 
   /* ------------------------- chats ------------------------- */
 
@@ -62,9 +53,10 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
 
   private void removeOrphanLink(long linkId) {
     subscribersByLink.remove(linkId);
-    StoredLink link = linksById.remove(linkId);
+    Link link = linksById.remove(linkId);
     if (link != null) {
-      linksByUrl.remove(link.url());
+      linksByUrl.remove(link.getUrl());
+      checkedAtByUrl.remove(link.getUrl()); // ← синхронная чистка времени
     }
   }
 
@@ -77,41 +69,41 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
 
   @Override
   public TrackedLink addLink(long chatId, URI url, List<String> tags, List<String> filters) {
-    // ссылка глобально уникальна: переиспользуем существующую или заводим новую
-    StoredLink link =
+    Link link =
         linksByUrl.computeIfAbsent(
             url,
             u -> {
-              StoredLink created = new StoredLink(linkIdSeq.incrementAndGet(), u, Instant.now());
-              linksById.put(created.id(), created);
+              Link created = new Link(linkIdSeq.incrementAndGet(), u, Instant.now());
+              linksById.put(created.getId(), created);
+              checkedAtByUrl.put(u, Instant.EPOCH); // ← первый тик всегда сработает
               return created;
             });
 
-    // подписка чата с его собственными tags/filters
     Subscription sub = new Subscription(new ArrayList<>(tags), new ArrayList<>(filters));
-    subsByChat.get(chatId).put(link.id(), sub);
-    subscribersByLink.computeIfAbsent(link.id(), k -> ConcurrentHashMap.newKeySet()).add(chatId);
+    subsByChat.get(chatId).put(link.getId(), sub);
+    subscribersByLink.computeIfAbsent(link.getId(), k -> ConcurrentHashMap.newKeySet()).add(chatId);
 
     return toDomain(link, sub);
   }
 
   @Override
   public boolean removeLink(long chatId, URI url) {
-    StoredLink link = linksByUrl.get(url);
+    Link link = linksByUrl.get(url);
     if (link == null) {
       return false;
     }
     Map<Long, Subscription> subs = subsByChat.get(chatId);
-    if (subs == null || subs.remove(link.id()) == null) {
-      return false; // чат не был подписан на эту ссылку
+    if (subs == null || subs.remove(link.getId()) == null) {
+      return false;
     }
-    Set<Long> subscribers = subscribersByLink.get(link.id());
+    Set<Long> subscribers = subscribersByLink.get(link.getId());
     if (subscribers != null) {
       subscribers.remove(chatId);
       if (subscribers.isEmpty()) {
-        subscribersByLink.remove(link.id());
-        linksById.remove(link.id());
+        subscribersByLink.remove(link.getId());
+        linksById.remove(link.getId());
         linksByUrl.remove(url);
+        checkedAtByUrl.remove(url); // ← синхронная чистка времени
       }
     }
     return true;
@@ -119,12 +111,12 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
 
   @Override
   public boolean subscriptionExists(long chatId, URI url) {
-    StoredLink link = linksByUrl.get(url);
+    Link link = linksByUrl.get(url);
     if (link == null) {
       return false;
     }
     Map<Long, Subscription> subs = subsByChat.get(chatId);
-    return subs != null && subs.containsKey(link.id());
+    return subs != null && subs.containsKey(link.getId());
   }
 
   @Override
@@ -136,7 +128,7 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
     List<TrackedLink> result = new ArrayList<>(subs.size());
     subs.forEach(
         (linkId, sub) -> {
-          StoredLink link = linksById.get(linkId);
+          Link link = linksById.get(linkId);
           if (link != null) {
             result.add(toDomain(link, sub));
           }
@@ -146,11 +138,11 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
 
   @Override
   public Set<Long> findSubscribers(URI url) {
-    StoredLink link = linksByUrl.get(url);
+    Link link = linksByUrl.get(url);
     if (link == null) {
       return Set.of();
     }
-    Set<Long> subscribers = subscribersByLink.get(link.id());
+    Set<Long> subscribers = subscribersByLink.get(link.getId());
     return subscribers == null ? Set.of() : Set.copyOf(subscribers);
   }
 
@@ -159,15 +151,21 @@ public class InMemorySubscriptionRepository implements SubscriptionRepository {
     return Set.copyOf(linksByUrl.keySet());
   }
 
-  /* ------------------------- helpers ------------------------- */
-
-  private TrackedLink toDomain(StoredLink link, Subscription sub) {
-    return new TrackedLink(link.id(), link.url(), sub.tags(), sub.filters());
+  @Override
+  public Instant getCheckedAt(URI url) {
+    return checkedAtByUrl.get(url);
   }
 
-  /** Внутренний holder ссылки (аналог строки таблицы links). */
-  private record StoredLink(long id, URI url, Instant createdAt) {}
+  @Override
+  public void updateCheckedAt(URI url, Instant checkedAt) {
+    checkedAtByUrl.put(url, checkedAt);
+  }
 
-  /** Внутренний holder подписки (аналог строки chat_links + её tags/filters). */
+  /* ------------------------- helpers ------------------------- */
+
+  private TrackedLink toDomain(Link link, Subscription sub) {
+    return new TrackedLink(link.getId(), link.getUrl(), sub.tags(), sub.filters());
+  }
+
   private record Subscription(List<String> tags, List<String> filters) {}
 }

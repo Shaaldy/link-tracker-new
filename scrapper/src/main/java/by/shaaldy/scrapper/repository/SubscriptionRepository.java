@@ -1,6 +1,7 @@
 package by.shaaldy.scrapper.repository;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -28,5 +29,10 @@ public interface SubscriptionRepository {
   /* --- reverse: для Stage 3 планировщика --- */
   Set<Long> findSubscribers(URI url); // кто подписан на ссылку
 
+  /* --- для планировщика --- */
   Collection<URI> findAllUrls();
+
+  Instant getCheckedAt(URI url);
+
+  void updateCheckedAt(URI url, Instant checkedAt);
 }
