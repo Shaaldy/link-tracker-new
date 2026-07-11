@@ -6,10 +6,14 @@ CREATE TABLE chats (
 
 -- links: уникальные отслеживаемые ссылки.
 -- last_checked_at — водяная метка планировщика (до какого момента активность уже обработана).
+-- Дефолт — эпоха (1970-01-01), а не '-infinity': эпоха выражается в Java (Instant/OffsetDateTime)
+-- и читается драйвером без спецслучаев, при этом остаётся "раньше любой реальной активности"
+-- на GitHub/StackOverflow → новая ссылка сортируется первой в keyset и гарантированно
+-- проверяется на первом тике.
 CREATE TABLE links (
                        id              BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                        url             TEXT        NOT NULL UNIQUE,
-                       last_checked_at TIMESTAMPTZ NOT NULL DEFAULT '-infinity',
+                       last_checked_at TIMESTAMPTZ NOT NULL DEFAULT '1970-01-01T00:00:00Z',
                        created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
