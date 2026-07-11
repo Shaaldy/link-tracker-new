@@ -1,4 +1,4 @@
-package by.shaaldy.scrapper.repository;
+package by.shaaldy.scrapper.repository.sql;
 
 import java.net.URI;
 import java.sql.ResultSet;

@@ -1,4 +1,4 @@
-package by.shaaldy.scrapper.repository;
+package by.shaaldy.scrapper.repository.sql;
 
 import java.net.URI;
 import java.sql.ResultSet;
@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.transaction.annotation.Transactional;
 
 import by.shaaldy.scrapper.domain.TrackedLink;
+import by.shaaldy.scrapper.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
