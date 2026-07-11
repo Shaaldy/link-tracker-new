@@ -36,9 +36,13 @@ public interface LinkPollingRepository {
    */
   record Cursor(Instant lastCheckedAt, long id) {
 
-    /** Начало обхода: раньше любого реального значения, чтобы первый батч захватил всё. */
+    /**
+     * Начало обхода: на секунду раньше эпохи (дефолт last_checked_at в схеме) — гарантированно
+     * раньше любой строки, поэтому строгое {@code >} в keyset захватит и новые ссылки с
+     * меткой-эпохой.
+     */
     public static Cursor start() {
-      return new Cursor(Instant.MIN, Long.MIN_VALUE);
+      return new Cursor(Instant.EPOCH.minusSeconds(1), Long.MIN_VALUE);
     }
   }
 }

@@ -6,13 +6,13 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import by.shaaldy.scrapper.domain.Link;
+import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,28 +31,21 @@ public class SqlLinkPollingRepository implements LinkPollingRepository {
 
   @Override
   public List<Link> findBatch(Cursor cursor, int limit) {
-    boolean fromStart = cursor.equals(Cursor.start());
-
-    // Первый батч — без keyset-условия (Instant.MIN не представим в timestamptz надёжно);
-    // последующие — кортежное сравнение (last_checked_at, id) > (:ts, :id).
-    String where = fromStart ? "" : "WHERE (l.last_checked_at, l.id) > (:cursorTs, :cursorId)";
-
+    // Дефолт last_checked_at в схеме — эпоха, а Cursor.start() на секунду раньше эпохи,
+    // поэтому кортежное сравнение работает единообразно и для первого батча (спецслучай не нужен).
     String sql =
         """
             SELECT l.id, l.url, l.last_checked_at, l.created_at
             FROM links l
-            %s
+            WHERE (l.last_checked_at, l.id) > (:cursorTs, :cursorId)
             ORDER BY l.last_checked_at, l.id
             LIMIT :limit
-            """
-            .formatted(where);
-
-    Map<String, Object> params = new HashMap<>();
-    params.put("limit", limit);
-    if (!fromStart) {
-      params.put("cursorTs", OffsetDateTime.ofInstant(cursor.lastCheckedAt(), ZoneOffset.UTC));
-      params.put("cursorId", cursor.id());
-    }
+            """;
+    Map<String, Object> params =
+        Map.of(
+            "cursorTs", OffsetDateTime.ofInstant(cursor.lastCheckedAt(), ZoneOffset.UTC),
+            "cursorId", cursor.id(),
+            "limit", limit);
     return jdbc.query(sql, params, SqlLinkPollingRepository::mapLink);
   }
 
