@@ -17,11 +17,14 @@ public interface LinkJpaRepository extends JpaRepository<LinkEntity, Long> {
 
   @Query(
       """
-            SELECT l FROM LinkEntity l
-            WHERE l.lastCheckedAt > :ts
-               OR (l.lastCheckedAt = :ts AND l.id > :id)
-            ORDER BY l.lastCheckedAt, l.id
-            """)
+          SELECT l FROM LinkEntity l
+          WHERE (l.lastCheckedAt > :ts OR (l.lastCheckedAt = :ts AND l.id > :id))
+            AND l.lastCheckedAt < :tickStart
+          ORDER BY l.lastCheckedAt, l.id
+          """)
   List<LinkEntity> findKeysetBatch(
-      @Param("ts") OffsetDateTime cursorTs, @Param("id") long cursorId, Limit limit);
+      @Param("ts") OffsetDateTime cursorTs,
+      @Param("id") long cursorId,
+      @Param("tickStart") OffsetDateTime tickStart,
+      Limit limit);
 }

@@ -17,15 +17,18 @@ public interface LinkPollingRepository {
 
   /**
    * Следующий батч ссылок, отсортированных по {@code (last_checked_at, id)} по возрастанию — «самые
-   * давно проверенные вперёд». Keyset-пагинация: возвращаются строки, идущие в этом порядке строго
-   * после {@code cursor}. WHERE / ORDER BY / LIMIT выполняются в SQL, в память попадает только батч
-   * (требование ДЗ: не грузить все ссылки разом).
+   * давно проверенные вперёд». Keyset-пагинация: строки строго после {@code cursor}. Дополнительно
+   * отсекаются ссылки с {@code last_checked_at >= tickStart} — это исключает повторную обработку в
+   * одном тике: ссылка, чью метку планировщик только что продвинул на «сейчас», уезжает за границу
+   * tickStart и не попадает в поздние батчи того же прохода. WHERE / ORDER BY / LIMIT — в SQL, в
+   * память попадает только батч.
    *
    * @param cursor позиция, после которой брать; {@link Cursor#start()} для первого батча
+   * @param tickStart момент старта тика; берутся только ссылки с last_checked_at < tickStart
    * @param limit размер батча (app.scheduler.batch-size)
    * @return батч ссылок; пустой список — обход завершён
    */
-  List<Link> findBatch(Cursor cursor, int limit);
+  List<Link> findBatch(Cursor cursor, Instant tickStart, int limit);
 
   /** Продвинуть водяную метку по ссылке после успешной проверки. */
   void updateCheckedAt(long linkId, Instant checkedAt);

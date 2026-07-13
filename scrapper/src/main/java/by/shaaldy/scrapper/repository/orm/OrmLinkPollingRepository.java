@@ -16,6 +16,11 @@ import by.shaaldy.scrapper.repository.orm.jpa.entity.LinkEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * JPA/Hibernate-реализация батчевого обхода. Бин создаётся {@code OrmAccessConfig} при
+ * access-type=ORM. Keyset реализован в {@link LinkJpaRepository#findKeysetBatch} через HQL (кортеж
+ * развёрнут в OR). Entity → домен маппится на границе.
+ */
 @Slf4j
 @Transactional
 @RequiredArgsConstructor
@@ -24,9 +29,10 @@ public class OrmLinkPollingRepository implements LinkPollingRepository {
   private final LinkJpaRepository links;
 
   @Override
-  public List<Link> findBatch(Cursor cursor, int limit) {
+  public List<Link> findBatch(Cursor cursor, Instant tickStart, int limit) {
     OffsetDateTime cursorTs = OffsetDateTime.ofInstant(cursor.lastCheckedAt(), ZoneOffset.UTC);
-    return links.findKeysetBatch(cursorTs, cursor.id(), Limit.of(limit)).stream()
+    OffsetDateTime tickTs = OffsetDateTime.ofInstant(tickStart, ZoneOffset.UTC);
+    return links.findKeysetBatch(cursorTs, cursor.id(), tickTs, Limit.of(limit)).stream()
         .map(OrmLinkPollingRepository::toDomain)
         .toList();
   }

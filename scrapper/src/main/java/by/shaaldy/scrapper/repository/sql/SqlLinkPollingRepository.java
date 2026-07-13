@@ -30,14 +30,16 @@ public class SqlLinkPollingRepository implements LinkPollingRepository {
   private final NamedParameterJdbcTemplate jdbc;
 
   @Override
-  public List<Link> findBatch(Cursor cursor, int limit) {
+  public List<Link> findBatch(Cursor cursor, Instant tickStart, int limit) {
     // Дефолт last_checked_at в схеме — эпоха, а Cursor.start() на секунду раньше эпохи,
     // поэтому кортежное сравнение работает единообразно и для первого батча (спецслучай не нужен).
+    // Условие last_checked_at < :tickStart исключает повторную обработку в одном тике.
     String sql =
         """
             SELECT l.id, l.url, l.last_checked_at, l.created_at
             FROM links l
             WHERE (l.last_checked_at, l.id) > (:cursorTs, :cursorId)
+              AND l.last_checked_at < :tickStart
             ORDER BY l.last_checked_at, l.id
             LIMIT :limit
             """;
@@ -45,6 +47,7 @@ public class SqlLinkPollingRepository implements LinkPollingRepository {
         Map.of(
             "cursorTs", OffsetDateTime.ofInstant(cursor.lastCheckedAt(), ZoneOffset.UTC),
             "cursorId", cursor.id(),
+            "tickStart", OffsetDateTime.ofInstant(tickStart, ZoneOffset.UTC),
             "limit", limit);
     return jdbc.query(sql, params, SqlLinkPollingRepository::mapLink);
   }
