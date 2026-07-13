@@ -8,7 +8,8 @@ import org.springframework.web.service.annotation.HttpExchange;
 @HttpExchange
 public interface StackOverflowApi {
 
-  @GetExchange("/questions/{id}")
+  // filter=withbody — иначе API не возвращает title/body, только метаданные.
+  @GetExchange("/questions/{id}?filter=withbody")
   StackOverflowResponse getQuestion(
       @PathVariable long id, @RequestParam String site, @RequestParam(required = false) String key);
 }
