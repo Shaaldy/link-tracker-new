@@ -1,5 +1,14 @@
 package by.shaaldy.scrapper.scheduler;
 
+import java.net.URI;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Set;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
 import by.shaaldy.scrapper.client.LinkSourceRouter;
 import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.client.bot.BotClient;
@@ -12,14 +21,6 @@ import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
-import java.net.URI;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @Component
@@ -32,9 +33,7 @@ public class UpdateScheduler {
   private final BotClient botClient;
   private final AppProperties properties;
 
-  /**
-   * Форматирует детализацию в человекочитаемое сообщение для бота (требование ДЗ).
-   */
+  /** Форматирует детализацию в человекочитаемое сообщение для бота (требование ДЗ). */
   private static String format(URI url, UpdateDetails d) {
     if (d == null) {
       return "Обновление: " + url;
@@ -94,11 +93,11 @@ public class UpdateScheduler {
     if (!subscribers.isEmpty()) {
       UpdateDetails details = checker.fetchDetails(url);
       LinkUpdate update =
-              new LinkUpdate()
-                      .id(link.getId())
-                      .url(url)
-                      .description(format(url, details))
-                      .tgChatIds(List.copyOf(subscribers));
+          new LinkUpdate()
+              .id(link.getId())
+              .url(url)
+              .description(format(url, details))
+              .tgChatIds(List.copyOf(subscribers));
       botClient.sendUpdate(update);
       log.info("Отправлено обновление по {} для {} подписчиков", url, subscribers.size());
     }

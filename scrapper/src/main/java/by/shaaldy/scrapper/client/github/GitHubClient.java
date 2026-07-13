@@ -2,9 +2,10 @@ package by.shaaldy.scrapper.client.github;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import org.springframework.stereotype.Component;
 
@@ -38,16 +39,43 @@ public class GitHubClient implements UpdateChecker {
     String owner = parts[1];
     String repo = parts[2];
 
-    // Берём свежайший из последнего PR и последнего Issue (у обоих sort=updated desc, per_page=1).
-    GitHubItemResponse latest =
-        Stream.concat(api.getPulls(owner, repo).stream(), api.getIssues(owner, repo).stream())
-            .max(Comparator.comparing(GitHubItemResponse::updatedAt))
-            .orElse(null);
-    if (latest == null) {
-      return new UpdateDetails(null, null, null, null);
-    }
-    String author = latest.user() == null ? null : latest.user().login();
-    return new UpdateDetails(
-        latest.title(), author, latest.createdAt(), TextPreview.preview(latest.body()));
+    // Три кандидата: последний PR, последний Issue, репо-событие (общий случай — пуш в код и т.п.).
+    // Выбираем самое свежее по времени. Репо-кандидат есть всегда; PR/Issue могут отсутствовать.
+    List<Candidate> candidates = new ArrayList<>();
+
+    GitHubRepoResponse repository = api.getRepository(owner, repo);
+    candidates.add(repoCandidate(repository));
+
+    api.getPulls(owner, repo).stream()
+        .findFirst()
+        .map(GitHubClient::itemCandidate)
+        .ifPresent(candidates::add);
+    api.getIssues(owner, repo).stream()
+        .findFirst()
+        .map(GitHubClient::itemCandidate)
+        .ifPresent(candidates::add);
+
+    return candidates.stream()
+        .max(Comparator.comparing(Candidate::at))
+        .map(Candidate::details)
+        .orElseGet(() -> new UpdateDetails(null, null, null, null));
   }
+
+  private static Candidate itemCandidate(GitHubItemResponse item) {
+    String author = item.user() == null ? null : item.user().login();
+    UpdateDetails details =
+        new UpdateDetails(item.title(), author, item.createdAt(), TextPreview.preview(item.body()));
+    return new Candidate(item.updatedAt(), details);
+  }
+
+  private static Candidate repoCandidate(GitHubRepoResponse repo) {
+    String author = repo.owner() == null ? null : repo.owner().login();
+    UpdateDetails details =
+        new UpdateDetails(
+            repo.fullName(), author, repo.pushedAt(), TextPreview.preview(repo.description()));
+    return new Candidate(repo.pushedAt(), details);
+  }
+
+  /** Кандидат детализации с временем события — для выбора самого свежего. */
+  private record Candidate(Instant at, UpdateDetails details) {}
 }
