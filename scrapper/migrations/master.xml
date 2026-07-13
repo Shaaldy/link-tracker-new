@@ -13,7 +13,7 @@
                 endDelimiter=";"/>
         <rollback>
             <sqlFile
-                    path="changesets/drob_tables.sql"
+                    path="changesets/drop_tables.sql"
                     relativeToChangelogFile="true"
                     splitStatements="true"
                     endDelimiter=";"/>
