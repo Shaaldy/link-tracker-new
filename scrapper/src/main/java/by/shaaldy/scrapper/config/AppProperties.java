@@ -23,7 +23,8 @@ public record AppProperties(
 
   public record StackOverflow(@NotBlank String baseUrl, String key) {}
 
-  public record Scheduler(@Positive int batchSize, @NotNull Duration interval, @Positive int parallelism) {}
+  public record Scheduler(
+      @Positive int batchSize, @NotNull Duration interval, @Positive int parallelism) {}
 
   public enum AccessType {
     SQL,

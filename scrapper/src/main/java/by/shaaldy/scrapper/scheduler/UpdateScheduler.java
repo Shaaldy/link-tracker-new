@@ -89,7 +89,7 @@ public class UpdateScheduler {
         Thread.currentThread().interrupt();
         return;
       } catch (java.util.concurrent.ExecutionException e) {
-        log.warn("Ошибка в задаче обработки ссылки: {}", e.getCause().getMessage());
+        log.warn("Ошибка в задаче обработки ссылки", e.getCause() == null ? e : e.getCause());
       }
     }
   }
