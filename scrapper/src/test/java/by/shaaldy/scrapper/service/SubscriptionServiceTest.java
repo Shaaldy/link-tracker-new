@@ -44,6 +44,20 @@ class SubscriptionServiceTest {
   }
 
   @Test
+  void existChat_missingChat_returnFalse() {
+    when(repository.chatExists(CHAT)).thenReturn(false);
+    Boolean ans = service.existChat(CHAT);
+    assertThat(ans).isFalse();
+  }
+
+  @Test
+  void existChat_existingChat_returnTrue() {
+    when(repository.chatExists(CHAT)).thenReturn(true);
+    Boolean ans = service.existChat(CHAT);
+    assertThat(ans).isTrue();
+  }
+
+  @Test
   void registerChat_existingChat_throwChatAlreadyExists() {
     when(repository.registerChat(CHAT)).thenReturn(false);
     assertThatThrownBy(() -> service.registerChat(CHAT))
