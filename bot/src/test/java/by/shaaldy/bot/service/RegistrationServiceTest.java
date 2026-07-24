@@ -5,7 +5,6 @@ import static org.mockito.Mockito.*;
 
 import java.util.HashSet;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,7 +23,6 @@ public class RegistrationServiceTest {
   @InjectMocks RegistrationService registrationService;
 
   private static final long CHAT = 1L;
-
 
   @Test
   void checkRegistration_alreadyCached_returnTrue() {
