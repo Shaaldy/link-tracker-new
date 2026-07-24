@@ -181,7 +181,7 @@ public class SqlSubscriptionRepository implements SubscriptionRepository {
 
   @Override
   public void deleteAll() {
-     jdbc.getJdbcTemplate()
+    jdbc.getJdbcTemplate()
         .execute("TRUNCATE chats, links, chat_links, link_tags, link_filters CASCADE");
   }
 
