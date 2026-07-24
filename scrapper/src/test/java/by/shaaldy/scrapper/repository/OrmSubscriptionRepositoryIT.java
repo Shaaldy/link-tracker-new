@@ -6,7 +6,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
@@ -19,11 +18,6 @@ class OrmSubscriptionRepositoryIT extends AbstractPostgresIT {
   @Autowired SubscriptionRepository repository;
 
   private static final URI URL = URI.create("https://github.com/orm/repo");
-
-  @BeforeEach
-  void clean() {
-    repository.deleteAll();
-  }
 
   @Test
   void addLink_newSubscription_persistsWithTagsAndFilters() {
