@@ -15,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -40,7 +39,7 @@ class UpdateSchedulerTest {
   @Mock UpdateChecker checker;
   @Mock AppProperties properties;
 
-  @InjectMocks UpdateScheduler scheduler;
+  UpdateScheduler scheduler;
 
   private static final Instant FRESH = Instant.parse("2026-07-01T00:00:00Z");
   private static final Instant SEEN = Instant.EPOCH;
@@ -50,11 +49,12 @@ class UpdateSchedulerTest {
   }
 
   @BeforeEach
-  void stubBatchSize() {
-    // properties.scheduler().batchSize() — вложенный мок; batchSize=100.
+  void setUp() {
     AppProperties.Scheduler sched = mock(AppProperties.Scheduler.class);
     lenient().when(sched.batchSize()).thenReturn(100);
+    lenient().when(sched.parallelism()).thenReturn(4);
     lenient().when(properties.scheduler()).thenReturn(sched);
+    scheduler = new UpdateScheduler(polling, repository, router, botClient, properties);
   }
 
   /** Первый findBatch отдаёт батч, второй — пусто (иначе бесконечный цикл). */
