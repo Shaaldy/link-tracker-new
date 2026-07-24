@@ -107,8 +107,17 @@
     </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
+    <resources>
+        <resource>
+            <directory>src/main/resources</directory>
+        </resource>
+        <resource>
+            <directory>${project.basedir}/../migrations</directory>
+            <targetPath>migrations</targetPath>
+        </resource>
+    </resources>
+    <plugins>
+        <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
