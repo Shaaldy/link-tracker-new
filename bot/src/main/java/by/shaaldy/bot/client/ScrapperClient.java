@@ -24,6 +24,9 @@ public interface ScrapperClient {
   @DeleteExchange("/tg-chat/{id}")
   void deleteChat(@PathVariable long id);
 
+  @GetExchange("/tg-chat/{id}")
+  Boolean existChat(@PathVariable long id);
+
   @GetExchange("/links")
   ListLinksResponse listLinks(@RequestHeader(CHAT_ID_HEADER) long chatId);
 

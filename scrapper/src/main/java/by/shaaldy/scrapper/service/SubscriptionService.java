@@ -40,6 +40,10 @@ public class SubscriptionService {
     log.info("Чат {} удалён", chatId);
   }
 
+  public boolean existChat(long chatId) {
+    return repository.chatExists(chatId);
+  }
+
   /* --- links --- */
 
   public TrackedLink addLink(long chatId, URI url, List<String> tags, List<String> filters) {
