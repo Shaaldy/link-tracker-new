@@ -22,4 +22,6 @@ public interface SubscriptionRepository {
   List<TrackedLink> findLinksByChat(long chatId);
 
   Set<Long> findSubscribers(URI url);
+
+  void deleteAll();
 }

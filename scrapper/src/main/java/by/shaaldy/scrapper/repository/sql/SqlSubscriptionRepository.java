@@ -179,6 +179,12 @@ public class SqlSubscriptionRepository implements SubscriptionRepository {
     return Set.copyOf(jdbc.queryForList(sql, Map.of("url", url.toString()), Long.class));
   }
 
+  @Override
+  public void deleteAll() {
+     jdbc.getJdbcTemplate()
+        .execute("TRUNCATE chats, links, chat_links, link_tags, link_filters CASCADE");
+  }
+
   /** Разворачивает строку с PG-массивами tags/filters в доменный TrackedLink. */
   private static TrackedLink mapTrackedLink(ResultSet rs, int rowNum) throws SQLException {
     long id = rs.getLong("id");

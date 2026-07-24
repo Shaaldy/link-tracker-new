@@ -131,6 +131,13 @@ public class OrmSubscriptionRepository implements SubscriptionRepository {
         .orElse(Set.of());
   }
 
+  @Override
+  public void deleteAll() {
+    chatLinks.deleteAll();
+    chats.deleteAll();
+    links.deleteAll();
+  }
+
   /**
    * Конвертирует подписку в домен. Требует url ссылки, которого нет в ChatLinkEntity — подтягиваем
    * LinkEntity по link_id. Внутри транзакции, LAZY-коллекции доступны.
