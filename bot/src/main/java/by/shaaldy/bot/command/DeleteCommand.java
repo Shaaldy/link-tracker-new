@@ -5,12 +5,14 @@ import org.springframework.web.client.RestClientException;
 
 import by.shaaldy.bot.client.ScrapperApiException;
 import by.shaaldy.bot.client.ScrapperClient;
+import by.shaaldy.bot.service.RegistrationService;
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class DeleteCommand implements Command {
   private final ScrapperClient scrapperClient;
+  private final RegistrationService registrationService;
 
   @Override
   public String command() {
@@ -26,6 +28,7 @@ public class DeleteCommand implements Command {
   public String execute(long chatId, String text) {
     try {
       scrapperClient.deleteChat(chatId);
+      registrationService.markUnregistered(chatId);
       return "Чат и все подписки успешно удалены";
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 404) {

@@ -32,4 +32,9 @@ public class HelpCommand implements Command {
         .map(c -> c.command() + " - " + c.description())
         .collect(Collectors.joining("\n"));
   }
+
+  @Override
+  public boolean requiresRegistration() {
+    return false;
+  }
 }
