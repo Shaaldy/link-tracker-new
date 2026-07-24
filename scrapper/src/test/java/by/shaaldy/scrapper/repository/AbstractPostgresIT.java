@@ -25,11 +25,12 @@ abstract class AbstractPostgresIT {
   void clean() {
     jdbcTemplate.execute(
         """
-        DROP TABLE IF EXISTS link_filters;
-        DROP TABLE IF EXISTS link_tags;
-        DROP TABLE IF EXISTS chat_links;
-        DROP TABLE IF EXISTS links;
-        DROP TABLE IF EXISTS chats;
+        TRUNCATE TABLE link_filters,
+                     link_tags,
+                     chat_links,
+                     links,
+                     chats
+        RESTART IDENTITY CASCADE;
         """);
   }
 }
