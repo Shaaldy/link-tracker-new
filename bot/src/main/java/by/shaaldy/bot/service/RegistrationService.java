@@ -3,6 +3,7 @@ package by.shaaldy.bot.service;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.bot.client.ScrapperClient;
@@ -14,7 +15,12 @@ public class RegistrationService {
 
   private final ScrapperClient scrapperClient;
 
-  private final Set<Long> registered = ConcurrentHashMap.newKeySet();
+  private final Set<Long> registered;
+
+  @Bean
+  Set<Long> registered() {
+    return ConcurrentHashMap.newKeySet();
+  }
 
   public boolean isRegistered(long chatId) {
     if (registered.contains(chatId)) {
