@@ -27,21 +27,35 @@ public class ListCommand implements Command {
 
   @Override
   public String execute(long chatId, String text) {
+    String[] parts = text.split("\\s+", 2);
+    String tag = parts.length > 1 ? parts[1].strip() : null;
+
     try {
-      ListLinksResponse response = scrapperClient.listLinks(chatId);
+      ListLinksResponse response =
+          (tag == null || tag.isBlank())
+              ? scrapperClient.listLinks(chatId)
+              : scrapperClient.listLinksByTag(chatId, tag);
+
       if (response.getSize() == null || response.getSize() == 0) {
-        return "Список отслеживаемых ссылок пуст.";
+        return (tag == null || tag.isBlank())
+            ? "Список отслеживаемых ссылок пуст."
+            : "Нет ссылок с тегом «" + tag + "».";
       }
-      return response.getLinks().stream()
-          .map(
-              l ->
-                  "• "
-                      + l.getUrl()
-                      + (l.getTags().isEmpty() ? "" : "  тэги: " + String.join(", ", l.getTags()))
-                      + (l.getFilters().isEmpty()
-                          ? ""
-                          : "  фильтры: " + String.join(", ", l.getFilters())))
-          .collect(Collectors.joining("\n"));
+
+      String header = (tag == null || tag.isBlank()) ? "" : "Ссылки с тегом «" + tag + "»:\n";
+      return header
+          + response.getLinks().stream()
+              .map(
+                  l ->
+                      "• "
+                          + l.getUrl()
+                          + (l.getTags().isEmpty()
+                              ? ""
+                              : "  тэги: " + String.join(", ", l.getTags()))
+                          + (l.getFilters().isEmpty()
+                              ? ""
+                              : "  фильтры: " + String.join(", ", l.getFilters())))
+              .collect(Collectors.joining("\n"));
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 404) {
         return "Сначала зарегистрируйтесь: /start.";

@@ -12,6 +12,7 @@ import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
+import by.shaaldy.bot.dto.scrapper.TagRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,6 +33,9 @@ public class DialogHandler {
       case AWAITING_TAGS -> onTags(ctx, text);
       case AWAITING_FILTERS -> onFilters(chatId, ctx, text);
       case AWAITING_UNTRACK -> onUntrack(chatId, text);
+      case AWAITING_TAG_LINK -> onTagLink(ctx, text);
+      case AWAITING_TAG_ACTION -> onTagAction(ctx, text);
+      case AWAITING_TAG_NAME -> onTagName(chatId, ctx, text);
       case IDLE -> "Диалог не активен. Наберите /help.";
     };
   }
@@ -79,6 +83,60 @@ public class DialogHandler {
       return "Ссылка удалена: " + removed.getUrl();
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 404) return "Эта ссылка не отслеживается.";
+      return e.userMessage();
+    } catch (IllegalArgumentException e) {
+      return "Некорректная ссылка.";
+    } catch (RestClientException e) {
+      return "Сервис временно недоступен, попробуйте позже.";
+    } finally {
+      holder.reset(chatId);
+    }
+  }
+
+  private String onTagLink(DialogContext ctx, String text) {
+    int index;
+    try {
+      index = Integer.parseInt(text.trim()) - 1; // нумерация с 1
+    } catch (NumberFormatException e) {
+      return "Введите номер ссылки из списка.";
+    }
+    List<String> choices = ctx.getLinkChoices();
+    if (choices == null || index < 0 || index >= choices.size()) {
+      return "Нет ссылки с таким номером. Введите номер из списка.";
+    }
+    ctx.setSelectedUrl(choices.get(index));
+    ctx.setState(DialogState.AWAITING_TAG_ACTION);
+    return "Что сделать с тегом? Введите add (добавить) или remove (убрать):";
+  }
+
+  private String onTagAction(DialogContext ctx, String text) {
+    String action = text.trim().toLowerCase();
+    if (!action.equals("add") && !action.equals("remove")) {
+      return "Введите add или remove.";
+    }
+    ctx.setTagAction(action);
+    ctx.setState(DialogState.AWAITING_TAG_NAME);
+    return "Введите тег:";
+  }
+
+  private String onTagName(long chatId, DialogContext ctx, String text) {
+    String tag = text.trim();
+    try {
+      if (tag.isBlank()) {
+        return "Тег не может быть пустым.";
+      }
+      TagRequest request = new TagRequest().url(URI.create(ctx.getSelectedUrl())).tag(tag);
+      if (ctx.getTagAction().equals("add")) {
+        scrapperClient.addTag(chatId, request);
+        return "Тег «" + tag + "» добавлен к " + ctx.getSelectedUrl();
+      } else {
+        scrapperClient.removeTag(chatId, request);
+        return "Тег «" + tag + "» убран у " + ctx.getSelectedUrl();
+      }
+    } catch (ScrapperApiException e) {
+      if (e.getStatus().value() == 404) {
+        return "Ссылка или чат не найдены.";
+      }
       return e.userMessage();
     } catch (IllegalArgumentException e) {
       return "Некорректная ссылка.";

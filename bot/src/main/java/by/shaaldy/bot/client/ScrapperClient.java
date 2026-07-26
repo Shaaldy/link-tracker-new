@@ -1,6 +1,7 @@
 package by.shaaldy.bot.client;
 
-import by.shaaldy.bot.dto.scrapper.*;
+import java.util.List;
+
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -10,7 +11,7 @@ import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
 
-import java.util.List;
+import by.shaaldy.bot.dto.scrapper.*;
 
 @HttpExchange
 public interface ScrapperClient {
@@ -39,16 +40,15 @@ public interface ScrapperClient {
 
   @GetExchange("/links")
   ListLinksResponse listLinksByTag(
-          @RequestHeader(CHAT_ID_HEADER) long chatId, @RequestParam String tag);
+      @RequestHeader(CHAT_ID_HEADER) long chatId, @RequestParam String tag);
 
   @GetExchange("/tags")
   List<String> listTags(@RequestHeader(CHAT_ID_HEADER) long chatId);
 
   @PostExchange("/links/tags")
-  LinkResponse addTag(
-          @RequestHeader(CHAT_ID_HEADER) long chatId, @RequestBody TagRequest request);
+  LinkResponse addTag(@RequestHeader(CHAT_ID_HEADER) long chatId, @RequestBody TagRequest request);
 
   @DeleteExchange("/links/tags")
   LinkResponse removeTag(
-          @RequestHeader(CHAT_ID_HEADER) long chatId, @RequestBody TagRequest request);
+      @RequestHeader(CHAT_ID_HEADER) long chatId, @RequestBody TagRequest request);
 }

@@ -11,4 +11,8 @@ public class DialogContext {
   private DialogState state = DialogState.IDLE;
   private String link;
   private List<String> tags;
+
+  private List<String> linkChoices; // url'ы в порядке показа
+  private String selectedUrl;
+  private String tagAction;
 }
