@@ -2,6 +2,7 @@ package by.shaaldy.scrapper.service;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -82,6 +83,52 @@ public class SubscriptionService {
     return links;
   }
 
+  /* --- tags --- */
+
+  public List<TrackedLink> getLinksByTag(long chatId, String tag) {
+    requireChat(chatId);
+    if (isBlank(tag)) {
+      return List.of();
+    }
+    List<TrackedLink> links = repository.findLinksByChatAndTag(chatId, tag.strip());
+    log.debug("Чат {} запросил ссылки по тегу '{}', найдено {}", chatId, tag, links.size());
+    return links;
+  }
+
+  public Set<String> getTags(long chatId) {
+    requireChat(chatId);
+    Set<String> tags = repository.findTagsByChat(chatId);
+    log.debug("Чат {} запросил теги, найдено {}", chatId, tags.size());
+    return tags;
+  }
+
+  public boolean addTag(long chatId, URI url, String tag) {
+    requireChat(chatId);
+    linkValidator.validate(url);
+    if (isBlank(tag)) {
+      return false;
+    }
+    boolean added = repository.addTag(chatId, url, tag.strip());
+    if (added) {
+      log.info("Чат {} добавил тег '{}' к {}", chatId, tag, url);
+    }
+    return added;
+  }
+
+  public boolean removeTag(long chatId, URI url, String tag) {
+    requireChat(chatId);
+    linkValidator.validate(url);
+    if (isBlank(tag)) {
+      return false;
+    }
+    boolean removed = repository.removeTag(chatId, url, tag.strip());
+    if (removed) {
+      log.info("Чат {} убрал тег '{}' у {}", chatId, tag, url);
+    }
+    return removed;
+  }
+
+
   /* --- helpers --- */
 
   private void requireChat(long chatId) {
@@ -93,5 +140,9 @@ public class SubscriptionService {
 
   private static List<String> normalize(List<String> values) {
     return values == null ? List.of() : values;
+  }
+
+  private static boolean isBlank(String s) {
+    return s == null || s.isBlank();
   }
 }
