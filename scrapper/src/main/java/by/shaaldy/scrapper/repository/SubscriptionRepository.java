@@ -24,4 +24,12 @@ public interface SubscriptionRepository {
   Set<Long> findSubscribers(URI url);
 
   void deleteAll();
+
+  List<TrackedLink> findLinksByChatAndTag(long chatId, String tag);
+
+  Set<String> findTagsByChat(long chatId);
+
+  boolean addTag(long chatId, URI url, String tag);
+
+  boolean removeTag(long chatId, URI url, String tag);
 }

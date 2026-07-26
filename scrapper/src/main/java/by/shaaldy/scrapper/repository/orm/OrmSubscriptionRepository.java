@@ -110,10 +110,6 @@ public class OrmSubscriptionRepository implements SubscriptionRepository {
 
   @Override
   public List<TrackedLink> findLinksByChat(long chatId) {
-    // TODO(stage-2): N+1 — toTrackedLink подтягивает LinkEntity по id на каждую подписку.
-    // SQL-ветка обходится одним JOIN; здесь тощая entity без @ManyToOne на link провоцирует
-    // отдельный запрос за url. Приемлемо для Stage 2 (десятки ссылок на чат); оптимизация —
-    // HQL-проекция с join по link_id.
     return chatLinks.findById_ChatId(chatId).stream()
         .map(this::toTrackedLink)
         .collect(Collectors.toList());
@@ -136,6 +132,56 @@ public class OrmSubscriptionRepository implements SubscriptionRepository {
     chatLinks.deleteAll();
     chats.deleteAll();
     links.deleteAll();
+  }
+
+  @Override
+  public List<TrackedLink> findLinksByChatAndTag(long chatId, String tag) {
+    return chatLinks.findById_ChatId(chatId).stream()
+        .filter(cl -> cl.getTags().contains(tag))
+        .map(this::toTrackedLink)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public Set<String> findTagsByChat(long chatId) {
+    return chatLinks.findById_ChatId(chatId).stream()
+        .flatMap(cl -> cl.getTags().stream())
+        .collect(Collectors.toSet());
+  }
+
+  @Override
+  public boolean addTag(long chatId, URI url, String tag) {
+    LinkEntity link = links.findByUrl(url.toString()).orElse(null);
+    if (link == null) {
+      return false;
+    }
+    ChatLinkEntity cl = chatLinks.findById(new ChatLinkId(chatId, link.getId())).orElse(null);
+    if (cl == null) {
+      return false; // подписки нет — тег добавить некуда
+    }
+    if (cl.getTags().contains(tag)) {
+      return false; // тег уже есть — не дублируем
+    }
+    cl.getTags().add(tag);
+    chatLinks.save(cl);
+    return true;
+  }
+
+  @Override
+  public boolean removeTag(long chatId, URI url, String tag) {
+    LinkEntity link = links.findByUrl(url.toString()).orElse(null);
+    if (link == null) {
+      return false;
+    }
+    ChatLinkEntity cl = chatLinks.findById(new ChatLinkId(chatId, link.getId())).orElse(null);
+    if (cl == null) {
+      return false;
+    }
+    boolean removed = cl.getTags().remove(tag);
+    if (removed) {
+      chatLinks.save(cl);
+    }
+    return removed;
   }
 
   /**

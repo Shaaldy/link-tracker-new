@@ -3,6 +3,7 @@ package by.shaaldy.scrapper.repository.sql;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -183,6 +184,62 @@ public class SqlSubscriptionRepository implements SubscriptionRepository {
   public void deleteAll() {
     jdbc.getJdbcTemplate()
         .execute("TRUNCATE chats, links, chat_links, link_tags, link_filters CASCADE");
+  }
+
+  @Override
+  public List<TrackedLink> findLinksByChatAndTag(long chatId, String tag) {
+    // Переиспользуем агрегацию тегов/фильтров, добавив фильтр: только подписки, где есть :tag.
+    String sql =
+        """
+            SELECT l.id, l.url,
+                   ARRAY(SELECT lt.tag FROM link_tags lt
+                         WHERE lt.chat_id = cl.chat_id AND lt.link_id = cl.link_id) AS tags,
+                   ARRAY(SELECT lf.filter FROM link_filters lf
+                         WHERE lf.chat_id = cl.chat_id AND lf.link_id = cl.link_id) AS filters
+            FROM chat_links cl
+            JOIN links l ON l.id = cl.link_id
+            WHERE cl.chat_id = :chatId
+              AND EXISTS (SELECT 1 FROM link_tags t
+                          WHERE t.chat_id = cl.chat_id AND t.link_id = cl.link_id AND t.tag = :tag)
+            """;
+    return jdbc.query(
+        sql, Map.of("chatId", chatId, "tag", tag), SqlSubscriptionRepository::mapTrackedLink);
+  }
+
+  @Override
+  public Set<String> findTagsByChat(long chatId) {
+    String sql = "SELECT DISTINCT tag FROM link_tags WHERE chat_id = :chatId";
+    List<String> tags = jdbc.queryForList(sql, Map.of("chatId", chatId), String.class);
+    return new HashSet<>(tags);
+  }
+
+  @Override
+  public boolean addTag(long chatId, URI url, String tag) {
+    String sql =
+        """
+            INSERT INTO link_tags (chat_id, link_id, tag)
+            SELECT :chatId, l.id, :tag
+            FROM links l
+            WHERE l.url = :url
+              AND EXISTS (SELECT 1 FROM chat_links cl
+                          WHERE cl.chat_id = :chatId AND cl.link_id = l.id)
+            ON CONFLICT DO NOTHING
+            """;
+    int rows = jdbc.update(sql, Map.of("chatId", chatId, "url", url.toString(), "tag", tag));
+    return rows > 0;
+  }
+
+  @Override
+  public boolean removeTag(long chatId, URI url, String tag) {
+    String sql =
+        """
+            DELETE FROM link_tags
+            WHERE chat_id = :chatId
+              AND tag = :tag
+              AND link_id = (SELECT id FROM links WHERE url = :url)
+            """;
+    int rows = jdbc.update(sql, Map.of("chatId", chatId, "url", url.toString(), "tag", tag));
+    return rows > 0;
   }
 
   /** Разворачивает строку с PG-массивами tags/filters в доменный TrackedLink. */
