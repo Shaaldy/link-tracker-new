@@ -223,3 +223,14 @@ components:
         link:
           type: string
           format: uri
+    TagRequest:
+      type: object
+      required:
+        - url
+        - tag
+      properties:
+        url:
+          type: string
+          format: uri
+        tag:
+          type: string
