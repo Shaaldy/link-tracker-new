@@ -7,7 +7,9 @@ import static org.mockito.Mockito.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,163 +38,323 @@ class SubscriptionServiceTest {
 
   /* --- chats --- */
 
-  @Test
-  void registerChat_newChat_registers() {
-    when(repository.registerChat(CHAT)).thenReturn(true);
-    service.registerChat(CHAT);
-    verify(repository).registerChat(CHAT);
+  @Nested
+  class ChatOperations {
+    @Test
+    void registerChat_newChat_registers() {
+      when(repository.registerChat(CHAT)).thenReturn(true);
+      service.registerChat(CHAT);
+      verify(repository).registerChat(CHAT);
+    }
+
+    @Test
+    void existChat_missingChat_returnFalse() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
+      Boolean ans = service.existChat(CHAT);
+      assertThat(ans).isFalse();
+    }
+
+    @Test
+    void existChat_existingChat_returnTrue() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      Boolean ans = service.existChat(CHAT);
+      assertThat(ans).isTrue();
+    }
+
+    @Test
+    void registerChat_existingChat_throwChatAlreadyExists() {
+      when(repository.registerChat(CHAT)).thenReturn(false);
+      assertThatThrownBy(() -> service.registerChat(CHAT))
+          .isInstanceOf(ChatAlreadyExistsException.class);
+    }
+
+    @Test
+    void removeChat_existingChat_removes() {
+      when(repository.removeChat(CHAT)).thenReturn(true);
+      service.removeChat(CHAT);
+      verify(repository).removeChat(CHAT);
+    }
+
+    @Test
+    void removeChat_missingChat_throwChatNotFound() {
+      when(repository.removeChat(CHAT)).thenReturn(false);
+      assertThatThrownBy(() -> service.removeChat(CHAT)).isInstanceOf(ChatNotFoundException.class);
+    }
   }
 
-  @Test
-  void existChat_missingChat_returnFalse() {
-    when(repository.chatExists(CHAT)).thenReturn(false);
-    Boolean ans = service.existChat(CHAT);
-    assertThat(ans).isFalse();
+  @Nested
+  class LinkOperations {
+
+    /* --- addLink --- */
+
+    @Test
+    void addLink_newSubscription_savesAndReturnsTrackedLink() {
+      List<String> tags = List.of("t1");
+      List<String> filters = List.of("f1");
+      TrackedLink expected = new TrackedLink(1L, URL, tags, filters);
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.subscriptionExists(CHAT, URL)).thenReturn(false);
+      when(repository.addLink(CHAT, URL, tags, filters)).thenReturn(expected);
+
+      TrackedLink result = service.addLink(CHAT, URL, tags, filters);
+
+      assertThat(result).isEqualTo(expected);
+      verify(linkValidator).validate(URL);
+    }
+
+    @Test
+    void addLink_alreadyTracked_throwLinkAlreadyTracked() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.subscriptionExists(CHAT, URL)).thenReturn(true);
+
+      assertThatThrownBy(() -> service.addLink(CHAT, URL, List.of(), List.of()))
+          .isInstanceOf(LinkAlreadyTrackedException.class);
+      verify(repository, never()).addLink(anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void addLink_missingChat_throwChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
+
+      assertThatThrownBy(() -> service.addLink(CHAT, URL, List.of(), List.of()))
+          .isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).addLink(anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void addLink_unsupportedLink_throwUnsupportedLink() {
+      URI bad = URI.create("https://gitlab.com/a/b");
+      doThrow(new UnsupportedLinkException(bad)).when(linkValidator).validate(bad);
+
+      assertThatThrownBy(() -> service.addLink(CHAT, bad, List.of(), List.of()))
+          .isInstanceOf(UnsupportedLinkException.class);
+      verify(repository, never()).chatExists(anyLong()); // validate падает раньше requireChat
+      verify(repository, never()).addLink(anyLong(), any(), any(), any());
+    }
+
+    @Test
+    void addLink_nullTagsAndFilters_normalizesToEmptyLists() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.subscriptionExists(CHAT, URL)).thenReturn(false);
+      when(repository.addLink(eq(CHAT), eq(URL), any(), any()))
+          .thenReturn(new TrackedLink(1L, URL, List.of(), List.of()));
+
+      service.addLink(CHAT, URL, null, null);
+
+      verify(repository).addLink(CHAT, URL, List.of(), List.of());
+    }
+
+    /* --- removeLink --- */
+
+    @Test
+    void removeLink_trackedLink_removesAndReturnsIt() {
+      TrackedLink tracked = new TrackedLink(1L, URL, List.of(), List.of());
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findLinksByChat(CHAT)).thenReturn(List.of(tracked));
+
+      TrackedLink result = service.removeLink(CHAT, URL);
+
+      assertThat(result).isEqualTo(tracked);
+      verify(repository).removeLink(CHAT, URL);
+    }
+
+    @Test
+    void removeLink_missingChat_throwChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
+
+      assertThatThrownBy(() -> service.removeLink(CHAT, URL))
+          .isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).removeLink(anyLong(), any());
+    }
+
+    @Test
+    void removeLink_notTracked_throwLinkNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findLinksByChat(CHAT)).thenReturn(List.of());
+
+      assertThatThrownBy(() -> service.removeLink(CHAT, URL))
+          .isInstanceOf(LinkNotFoundException.class);
+      verify(repository, never()).removeLink(anyLong(), any());
+    }
+
+    /* --- getLinks --- */
+
+    @Test
+    void getLinks_existingChat_returnsLinks() {
+      TrackedLink tracked = new TrackedLink(1L, URL, List.of(), List.of());
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findLinksByChat(CHAT)).thenReturn(List.of(tracked));
+
+      assertThat(service.getLinks(CHAT)).containsExactly(tracked);
+    }
+
+    @Test
+    void getLinks_noSubscriptions_returnsEmptyList() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findLinksByChat(CHAT)).thenReturn(List.of());
+
+      assertThat(service.getLinks(CHAT)).isEmpty();
+    }
+
+    @Test
+    void getLinks_missingChat_throwChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
+
+      assertThatThrownBy(() -> service.getLinks(CHAT)).isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).findLinksByChat(anyLong());
+    }
   }
 
-  @Test
-  void existChat_existingChat_returnTrue() {
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    Boolean ans = service.existChat(CHAT);
-    assertThat(ans).isTrue();
-  }
+  @Nested
+  class TagOperations {
 
-  @Test
-  void registerChat_existingChat_throwChatAlreadyExists() {
-    when(repository.registerChat(CHAT)).thenReturn(false);
-    assertThatThrownBy(() -> service.registerChat(CHAT))
-        .isInstanceOf(ChatAlreadyExistsException.class);
-  }
+    /* --- getLinksByTag --- */
 
-  @Test
-  void removeChat_existingChat_removes() {
-    when(repository.removeChat(CHAT)).thenReturn(true);
-    service.removeChat(CHAT);
-    verify(repository).removeChat(CHAT);
-  }
+    @Test
+    void getLinksByTag_registeredChat_delegatesToRepository() {
+      TrackedLink link = new TrackedLink(1L, URL, List.of("работа"), List.of());
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findLinksByChatAndTag(CHAT, "работа")).thenReturn(List.of(link));
 
-  @Test
-  void removeChat_missingChat_throwChatNotFound() {
-    when(repository.removeChat(CHAT)).thenReturn(false);
-    assertThatThrownBy(() -> service.removeChat(CHAT)).isInstanceOf(ChatNotFoundException.class);
-  }
+      List<TrackedLink> result = service.getLinksByTag(CHAT, "работа");
 
-  /* --- addLink --- */
+      assertThat(result).containsExactly(link);
+      verify(repository).findLinksByChatAndTag(CHAT, "работа");
+    }
 
-  @Test
-  void addLink_newSubscription_savesAndReturnsTrackedLink() {
-    List<String> tags = List.of("t1");
-    List<String> filters = List.of("f1");
-    TrackedLink expected = new TrackedLink(1L, URL, tags, filters);
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.subscriptionExists(CHAT, URL)).thenReturn(false);
-    when(repository.addLink(CHAT, URL, tags, filters)).thenReturn(expected);
+    @Test
+    void getLinksByTag_unknownChat_throwsChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
 
-    TrackedLink result = service.addLink(CHAT, URL, tags, filters);
+      assertThatThrownBy(() -> service.getLinksByTag(CHAT, "работа"))
+          .isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).findLinksByChatAndTag(anyLong(), anyString());
+    }
 
-    assertThat(result).isEqualTo(expected);
-    verify(linkValidator).validate(URL);
-  }
+    @Test
+    void getLinksByTag_blankTag_returnsEmptyWithoutQuery() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
 
-  @Test
-  void addLink_alreadyTracked_throwLinkAlreadyTracked() {
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.subscriptionExists(CHAT, URL)).thenReturn(true);
+      assertThat(service.getLinksByTag(CHAT, "  ")).isEmpty();
+      verify(repository, never()).findLinksByChatAndTag(anyLong(), anyString());
+    }
 
-    assertThatThrownBy(() -> service.addLink(CHAT, URL, List.of(), List.of()))
-        .isInstanceOf(LinkAlreadyTrackedException.class);
-    verify(repository, never()).addLink(anyLong(), any(), any(), any());
-  }
+    @Test
+    void getLinksByTag_tagWithSpaces_passedStripped() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findLinksByChatAndTag(CHAT, "работа")).thenReturn(List.of());
 
-  @Test
-  void addLink_missingChat_throwChatNotFound() {
-    when(repository.chatExists(CHAT)).thenReturn(false);
+      service.getLinksByTag(CHAT, "  работа  ");
 
-    assertThatThrownBy(() -> service.addLink(CHAT, URL, List.of(), List.of()))
-        .isInstanceOf(ChatNotFoundException.class);
-    verify(repository, never()).addLink(anyLong(), any(), any(), any());
-  }
+      verify(repository).findLinksByChatAndTag(CHAT, "работа"); // обрезан
+    }
 
-  @Test
-  void addLink_unsupportedLink_throwUnsupportedLink() {
-    URI bad = URI.create("https://gitlab.com/a/b");
-    doThrow(new UnsupportedLinkException(bad)).when(linkValidator).validate(bad);
+    /* --- getTags --- */
 
-    assertThatThrownBy(() -> service.addLink(CHAT, bad, List.of(), List.of()))
-        .isInstanceOf(UnsupportedLinkException.class);
-    verify(repository, never()).chatExists(anyLong()); // validate падает раньше requireChat
-    verify(repository, never()).addLink(anyLong(), any(), any(), any());
-  }
+    @Test
+    void getTags_registeredChat_delegatesToRepository() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.findTagsByChat(CHAT)).thenReturn(Set.of("работа", "хобби"));
 
-  @Test
-  void addLink_nullTagsAndFilters_normalizesToEmptyLists() {
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.subscriptionExists(CHAT, URL)).thenReturn(false);
-    when(repository.addLink(eq(CHAT), eq(URL), any(), any()))
-        .thenReturn(new TrackedLink(1L, URL, List.of(), List.of()));
+      Set<String> tags = service.getTags(CHAT);
 
-    service.addLink(CHAT, URL, null, null);
+      assertThat(tags).containsExactlyInAnyOrder("работа", "хобби");
+    }
 
-    verify(repository).addLink(CHAT, URL, List.of(), List.of());
-  }
+    @Test
+    void getTags_unknownChat_throwsChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
 
-  /* --- removeLink --- */
+      assertThatThrownBy(() -> service.getTags(CHAT)).isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).findTagsByChat(anyLong());
+    }
 
-  @Test
-  void removeLink_trackedLink_removesAndReturnsIt() {
-    TrackedLink tracked = new TrackedLink(1L, URL, List.of(), List.of());
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.findLinksByChat(CHAT)).thenReturn(List.of(tracked));
+    /* --- addTag --- */
 
-    TrackedLink result = service.removeLink(CHAT, URL);
+    @Test
+    void addTag_registeredChat_delegatesAndReturnsResult() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.addTag(CHAT, URL, "новый")).thenReturn(true);
 
-    assertThat(result).isEqualTo(tracked);
-    verify(repository).removeLink(CHAT, URL);
-  }
+      boolean result = service.addTag(CHAT, URL, "новый");
 
-  @Test
-  void removeLink_missingChat_throwChatNotFound() {
-    when(repository.chatExists(CHAT)).thenReturn(false);
+      assertThat(result).isTrue();
+      verify(linkValidator).validate(URL);
+      verify(repository).addTag(CHAT, URL, "новый");
+    }
 
-    assertThatThrownBy(() -> service.removeLink(CHAT, URL))
-        .isInstanceOf(ChatNotFoundException.class);
-    verify(repository, never()).removeLink(anyLong(), any());
-  }
+    @Test
+    void addTag_duplicate_returnsFalseWithoutException() {
+      // Идемпотентность (вариант B): дубликат — не ошибка, false без исключения.
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.addTag(CHAT, URL, "есть")).thenReturn(false);
 
-  @Test
-  void removeLink_notTracked_throwLinkNotFound() {
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.findLinksByChat(CHAT)).thenReturn(List.of());
+      assertThat(service.addTag(CHAT, URL, "есть")).isFalse();
+    }
 
-    assertThatThrownBy(() -> service.removeLink(CHAT, URL))
-        .isInstanceOf(LinkNotFoundException.class);
-    verify(repository, never()).removeLink(anyLong(), any());
-  }
+    @Test
+    void addTag_unknownChat_throwsChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
 
-  /* --- getLinks --- */
+      assertThatThrownBy(() -> service.addTag(CHAT, URL, "тег"))
+          .isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).addTag(anyLong(), any(), anyString());
+    }
 
-  @Test
-  void getLinks_existingChat_returnsLinks() {
-    TrackedLink tracked = new TrackedLink(1L, URL, List.of(), List.of());
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.findLinksByChat(CHAT)).thenReturn(List.of(tracked));
+    @Test
+    void addTag_blankTag_returnsFalseWithoutQuery() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
 
-    assertThat(service.getLinks(CHAT)).containsExactly(tracked);
-  }
+      assertThat(service.addTag(CHAT, URL, "")).isFalse();
+      verify(repository, never()).addTag(anyLong(), any(), anyString());
+    }
 
-  @Test
-  void getLinks_noSubscriptions_returnsEmptyList() {
-    when(repository.chatExists(CHAT)).thenReturn(true);
-    when(repository.findLinksByChat(CHAT)).thenReturn(List.of());
+    @Test
+    void addTag_tagWithSpaces_passedStripped() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.addTag(CHAT, URL, "работа")).thenReturn(true);
 
-    assertThat(service.getLinks(CHAT)).isEmpty();
-  }
+      service.addTag(CHAT, URL, "  работа  ");
 
-  @Test
-  void getLinks_missingChat_throwChatNotFound() {
-    when(repository.chatExists(CHAT)).thenReturn(false);
+      verify(repository).addTag(CHAT, URL, "работа");
+    }
 
-    assertThatThrownBy(() -> service.getLinks(CHAT)).isInstanceOf(ChatNotFoundException.class);
-    verify(repository, never()).findLinksByChat(anyLong());
+    /* --- removeTag --- */
+
+    @Test
+    void removeTag_existing_delegatesAndReturnsResult() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.removeTag(CHAT, URL, "убрать")).thenReturn(true);
+
+      assertThat(service.removeTag(CHAT, URL, "убрать")).isTrue();
+      verify(linkValidator).validate(URL);
+      verify(repository).removeTag(CHAT, URL, "убрать");
+    }
+
+    @Test
+    void removeTag_absent_returnsFalseWithoutException() {
+      // Идемпотентность: тега не было — false без исключения.
+      when(repository.chatExists(CHAT)).thenReturn(true);
+      when(repository.removeTag(CHAT, URL, "нету")).thenReturn(false);
+
+      assertThat(service.removeTag(CHAT, URL, "нету")).isFalse();
+    }
+
+    @Test
+    void removeTag_unknownChat_throwsChatNotFound() {
+      when(repository.chatExists(CHAT)).thenReturn(false);
+
+      assertThatThrownBy(() -> service.removeTag(CHAT, URL, "тег"))
+          .isInstanceOf(ChatNotFoundException.class);
+      verify(repository, never()).removeTag(anyLong(), any(), anyString());
+    }
+
+    @Test
+    void removeTag_blankTag_returnsFalseWithoutQuery() {
+      when(repository.chatExists(CHAT)).thenReturn(true);
+
+      assertThat(service.removeTag(CHAT, URL, null)).isFalse();
+      verify(repository, never()).removeTag(anyLong(), any(), anyString());
+    }
   }
 }

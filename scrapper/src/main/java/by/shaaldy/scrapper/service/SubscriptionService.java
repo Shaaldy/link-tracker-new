@@ -128,7 +128,6 @@ public class SubscriptionService {
     return removed;
   }
 
-
   /* --- helpers --- */
 
   private void requireChat(long chatId) {
