@@ -1,39 +1,35 @@
 package by.shaaldy.scrapper.repository;
 
 import java.net.URI;
-import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import by.shaaldy.scrapper.domain.Link;
 import by.shaaldy.scrapper.domain.TrackedLink;
 
 public interface SubscriptionRepository {
+  boolean registerChat(long chatId);
 
-  /* --- chats --- */
-  boolean registerChat(long chatId); // true если создан, false если уже был
-
-  boolean removeChat(long chatId); // true если удалён, false если не было
+  boolean removeChat(long chatId);
 
   boolean chatExists(long chatId);
 
-  /* --- links per chat --- */
   TrackedLink addLink(long chatId, URI url, List<String> tags, List<String> filters);
 
-  boolean removeLink(long chatId, URI url); // true если убрана, false если подписки не было
+  boolean removeLink(long chatId, URI url);
 
   boolean subscriptionExists(long chatId, URI url);
 
   List<TrackedLink> findLinksByChat(long chatId);
 
-  /* --- reverse: для Stage 3 планировщика --- */
-  Set<Long> findSubscribers(URI url); // кто подписан на ссылку
+  Set<Long> findSubscribers(URI url);
 
-  /* --- для планировщика --- */
-  Collection<Link> findAllLinks();
+  void deleteAll();
 
-  Instant getCheckedAt(URI url);
+  List<TrackedLink> findLinksByChatAndTag(long chatId, String tag);
 
-  void updateCheckedAt(URI url, Instant checkedAt);
+  Set<String> findTagsByChat(long chatId);
+
+  boolean addTag(long chatId, URI url, String tag);
+
+  boolean removeTag(long chatId, URI url, String tag);
 }

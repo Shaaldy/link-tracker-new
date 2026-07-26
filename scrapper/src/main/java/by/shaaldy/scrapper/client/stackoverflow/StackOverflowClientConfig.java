@@ -18,7 +18,7 @@ public class StackOverflowClientConfig {
   @Bean
   StackOverflowApi stackOverflowApi() {
     RestClient restClient =
-        RestClient.builder().baseUrl(properties.stackOverflow().baseUrl()).build();
+        RestClient.builder().baseUrl(properties.stackoverflow().baseUrl()).build();
     HttpServiceProxyFactory factory =
         HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient)).build();
     return factory.createClient(StackOverflowApi.class);

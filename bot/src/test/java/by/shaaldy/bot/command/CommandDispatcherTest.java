@@ -3,7 +3,9 @@ package by.shaaldy.bot.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 
@@ -12,48 +14,78 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import by.shaaldy.bot.service.RegistrationService;
+
 @ExtendWith(MockitoExtension.class)
 class CommandDispatcherTest {
 
-  @Mock Command start;
+  @Mock Command command;
+  @Mock RegistrationService registrationService;
 
   private static final long CHAT = 1L;
 
-  @Test
-  void dispatch_knownCommand_executesIt() {
-    when(start.command()).thenReturn("/start");
-    when(start.execute(CHAT, "/start")).thenReturn("ok");
-    CommandDispatcher dispatcher = new CommandDispatcher(List.of(start));
-
-    assertThat(dispatcher.dispatch(CHAT, "/start")).isEqualTo("ok");
+  private CommandDispatcher dispatcher() {
+    return new CommandDispatcher(List.of(command), registrationService);
   }
 
   @Test
-  void dispatch_commandWithArguments_passesFullTextAndRoutesByFirstToken() {
-    when(start.command()).thenReturn("/track");
-    when(start.execute(CHAT, "/track https://github.com/a/b")).thenReturn("tracking");
-    CommandDispatcher dispatcher = new CommandDispatcher(List.of(start));
+  void dispatch_registeredChat_executesCommand() {
+    when(command.command()).thenReturn("/track");
+    when(command.requiresRegistration()).thenReturn(true);
+    when(command.execute(CHAT, "/track")).thenReturn("ok");
+    when(registrationService.isRegistered(CHAT)).thenReturn(true);
 
-    // роутинг по первому токену, но в execute уходит весь текст
-    assertThat(dispatcher.dispatch(CHAT, "/track https://github.com/a/b")).isEqualTo("tracking");
+    assertThat(dispatcher().dispatch(CHAT, "/track")).isEqualTo("ok");
+  }
+
+  @Test
+  void dispatch_unregisteredChat_blocksCommandAndAsksToStart() {
+    when(command.command()).thenReturn("/track");
+    when(command.requiresRegistration()).thenReturn(true);
+    when(registrationService.isRegistered(CHAT)).thenReturn(false);
+
+    String result = dispatcher().dispatch(CHAT, "/track");
+
+    assertThat(result).contains("/start");
+    verify(command, never()).execute(anyLong(), anyString());
+  }
+
+  @Test
+  void dispatch_publicCommand_executesWithoutRegistrationCheck() {
+    // /start и /help (requiresRegistration=false) выполняются без обращения к RegistrationService
+    when(command.command()).thenReturn("/start");
+    when(command.requiresRegistration()).thenReturn(false);
+    when(command.execute(CHAT, "/start")).thenReturn("registered");
+
+    assertThat(dispatcher().dispatch(CHAT, "/start")).isEqualTo("registered");
+    verify(registrationService, never()).isRegistered(anyLong());
+  }
+
+  @Test
+  void dispatch_commandWithArguments_routesByFirstTokenPassesFullText() {
+    when(command.command()).thenReturn("/track");
+    when(command.requiresRegistration()).thenReturn(true);
+    when(registrationService.isRegistered(CHAT)).thenReturn(true);
+    when(command.execute(CHAT, "/track https://github.com/a/b")).thenReturn("tracking");
+
+    assertThat(dispatcher().dispatch(CHAT, "/track https://github.com/a/b")).isEqualTo("tracking");
   }
 
   @Test
   void dispatch_unknownCommand_returnsFallbackAndDoesNotExecute() {
-    when(start.command()).thenReturn("/start");
-    CommandDispatcher dispatcher = new CommandDispatcher(List.of(start));
+    when(command.command()).thenReturn("/start");
+    CommandDispatcher dispatcher = dispatcher();
 
     String result = dispatcher.dispatch(CHAT, "/unknown");
 
     assertThat(result).isEqualTo("Неизвестная команда. Список команд: /help");
-    verify(start, never()).execute(anyLong(), anyString());
+    verify(command, never()).execute(anyLong(), anyString());
   }
 
   @Test
   void all_returnsRegisteredCommands() {
-    when(start.command()).thenReturn("/start");
-    CommandDispatcher dispatcher = new CommandDispatcher(List.of(start));
+    when(command.command()).thenReturn("/start");
 
-    assertThat(dispatcher.all()).containsExactly(start);
+    assertThat(dispatcher().all()).containsExactly(command);
   }
 }

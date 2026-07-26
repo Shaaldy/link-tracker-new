@@ -9,5 +9,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public record StackOverflowResponse(List<Item> items) {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record Item(@JsonProperty("last_activity_date") long lastActivityDate) {}
+  public record Item(
+      @JsonProperty("last_activity_date") long lastActivityDate,
+      @JsonProperty("creation_date") long creationDate,
+      String title,
+      Owner owner,
+      String body) {
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Owner(@JsonProperty("display_name") String displayName) {}
+  }
 }

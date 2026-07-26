@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.29.xsd">
+
+    <changeSet id="create_tables" author="shaaldy">
+        <sqlFile
+                path="changesets/create_tables.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                endDelimiter=";"/>
+        <rollback>
+            <sqlFile
+                    path="changesets/drop_tables.sql"
+                    relativeToChangelogFile="true"
+                    splitStatements="true"
+                    endDelimiter=";"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="create_indexes" author="shaaldy">
+        <sqlFile
+                path="changesets/create_indexes.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                endDelimiter=";"/>
+        <rollback>
+            <sqlFile
+                    path="changesets/drop_indexes.sql"
+                    relativeToChangelogFile="true"
+                    splitStatements="true"
+                    endDelimiter=";"/>
+        </rollback>
+    </changeSet>
+
+
+</databaseChangeLog>

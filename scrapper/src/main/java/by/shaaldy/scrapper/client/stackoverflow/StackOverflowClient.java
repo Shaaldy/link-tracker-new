@@ -2,6 +2,9 @@ package by.shaaldy.scrapper.client.stackoverflow;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,6 +13,8 @@ import org.springframework.util.StringUtils;
 
 import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.config.AppProperties;
+import by.shaaldy.scrapper.domain.UpdateDetails;
+import by.shaaldy.scrapper.util.TextPreview;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -28,14 +33,78 @@ public class StackOverflowClient implements UpdateChecker {
 
   @Override
   public Instant fetchLastActivity(URI url) {
+    long id = extractId(url);
+    StackOverflowResponse.Item question = firstItem(api.getQuestion(id, "stackoverflow", key()));
+    return question == null ? Instant.EPOCH : Instant.ofEpochSecond(question.lastActivityDate());
+  }
+
+  @Override
+  public UpdateDetails fetchDetails(URI url) {
+    long id = extractId(url);
+    String k = key();
+
+    // Тема вопроса — общая для всех типов обновления (ДЗ: "текст темы вопроса").
+    StackOverflowResponse.Item question = firstItem(api.getQuestion(id, "stackoverflow", k));
+    String title = question == null ? null : question.title();
+
+    // Три кандидата: свежайший ответ, свежайший комментарий, само событие вопроса (правка).
+    // Выбираем самый свежий по времени. У ответа/коммента author/preview свои, title — вопроса.
+    List<Candidate> candidates = new ArrayList<>();
+    if (question != null) {
+      candidates.add(
+          new Candidate(
+              question.lastActivityDate(),
+              new UpdateDetails(
+                  title,
+                  ownerName(question),
+                  Instant.ofEpochSecond(question.creationDate()),
+                  TextPreview.preview(question.body()))));
+    }
+    addBodyCandidate(candidates, firstItem(api.getAnswers(id, "stackoverflow", k)), title);
+    addBodyCandidate(candidates, firstItem(api.getComments(id, "stackoverflow", k)), title);
+
+    return candidates.stream()
+        .max(Comparator.comparingLong(Candidate::at))
+        .map(Candidate::details)
+        .orElseGet(() -> new UpdateDetails(title, null, null, null));
+  }
+
+  private static void addBodyCandidate(
+      List<Candidate> candidates, StackOverflowResponse.Item item, String title) {
+    if (item == null) {
+      return;
+    }
+    candidates.add(
+        new Candidate(
+            item.lastActivityDate() > 0 ? item.lastActivityDate() : item.creationDate(),
+            new UpdateDetails(
+                title,
+                ownerName(item),
+                Instant.ofEpochSecond(item.creationDate()),
+                TextPreview.preview(item.body()))));
+  }
+
+  private static String ownerName(StackOverflowResponse.Item item) {
+    return item.owner() == null ? null : item.owner().displayName();
+  }
+
+  private long extractId(URI url) {
     Matcher matcher = PATH.matcher(url.getPath());
     matcher.matches();
-    long id = Long.parseLong(matcher.group(1));
-
-    String key = properties.stackOverflow().key();
-    StackOverflowResponse response =
-        api.getQuestion(id, "stackoverflow", StringUtils.hasText(key) ? key : null);
-
-    return Instant.ofEpochSecond(response.items().getFirst().lastActivityDate());
+    return Long.parseLong(matcher.group(1));
   }
+
+  private String key() {
+    String key = properties.stackoverflow().key();
+    return StringUtils.hasText(key) ? key : null;
+  }
+
+  private static StackOverflowResponse.Item firstItem(StackOverflowResponse response) {
+    return response == null || response.items() == null || response.items().isEmpty()
+        ? null
+        : response.items().getFirst();
+  }
+
+  /** Кандидат детализации с временем события (epoch seconds) — для выбора самого свежего. */
+  private record Candidate(long at, UpdateDetails details) {}
 }

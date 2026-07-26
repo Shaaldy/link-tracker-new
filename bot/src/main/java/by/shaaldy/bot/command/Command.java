@@ -6,4 +6,8 @@ public interface Command {
   String description();
 
   String execute(long chatIt, String text);
+
+  default boolean requiresRegistration() {
+    return true;
+  }
 }

@@ -1,10 +1,7 @@
 package by.shaaldy.scrapper.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import by.shaaldy.scrapper.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
@@ -27,5 +24,10 @@ public class TgChatController {
   public ResponseEntity<Void> deleteChat(@PathVariable long id) {
     service.removeChat(id);
     return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("/tg-chat/{id}")
+  public ResponseEntity<Boolean> existChat(@PathVariable long id) {
+    return ResponseEntity.ok(service.existChat(id));
   }
 }

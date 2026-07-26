@@ -7,4 +7,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record GitHubRepoResponse(
-    @JsonProperty("pushed_at") Instant pushedAt, @JsonProperty("updated_at") Instant updatedAt) {}
+    @JsonProperty("pushed_at") Instant pushedAt,
+    @JsonProperty("updated_at") Instant updatedAt,
+    @JsonProperty("full_name") String fullName,
+    Owner owner,
+    String description) {
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Owner(String login) {}
+}
