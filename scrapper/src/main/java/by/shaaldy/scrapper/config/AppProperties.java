@@ -30,4 +30,13 @@ public record AppProperties(
     SQL,
     ORM
   }
+
+  public record Kafka(@Valid @NotNull Topics topics){
+    public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
+  }
+
+  public enum MessageTransport {
+    KAFKA,
+    HTTP
+  }
 }
