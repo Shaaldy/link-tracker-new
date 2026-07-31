@@ -17,7 +17,9 @@ public record AppProperties(
     @Valid StackOverflow stackoverflow,
     @NotBlank String botBaseUrl,
     @NotNull AccessType accessType,
-    @Valid @NotNull Scheduler scheduler) {
+    @Valid @NotNull Scheduler scheduler,
+    @NotNull MessageTransport messageTransport,
+    @Valid @NotNull Kafka kafka) {
 
   public record GitHub(@NotBlank String baseUrl, String token) {}
 
@@ -31,7 +33,7 @@ public record AppProperties(
     ORM
   }
 
-  public record Kafka(@Valid @NotNull Topics topics){
+  public record Kafka(@Valid @NotNull Topics topics) {
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
   }
 

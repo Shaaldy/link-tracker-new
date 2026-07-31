@@ -17,11 +17,11 @@ import org.springframework.stereotype.Component;
 
 import by.shaaldy.scrapper.client.LinkSourceRouter;
 import by.shaaldy.scrapper.client.UpdateChecker;
-import by.shaaldy.scrapper.client.bot.BotClient;
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.Link;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.dto.bot.LinkUpdate;
+import by.shaaldy.scrapper.notification.NotificationSender;
 import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
@@ -34,7 +34,7 @@ public class UpdateScheduler {
   private final LinkPollingRepository pollingRepository;
   private final SubscriptionRepository subscriptionRepository;
   private final LinkSourceRouter router;
-  private final BotClient botClient;
+  private final NotificationSender notificationSender;
   private final AppProperties properties;
   private final Semaphore semaphore; // ← без инициализатора здесь
 
@@ -43,12 +43,12 @@ public class UpdateScheduler {
       LinkPollingRepository pollingRepository,
       SubscriptionRepository subscriptionRepository,
       LinkSourceRouter router,
-      BotClient botClient,
+      NotificationSender notificationSender,
       AppProperties properties) {
     this.pollingRepository = pollingRepository;
     this.subscriptionRepository = subscriptionRepository;
     this.router = router;
-    this.botClient = botClient;
+    this.notificationSender = notificationSender;
     this.properties = properties;
     this.semaphore =
         new Semaphore(properties.scheduler().parallelism()); // ← здесь, properties уже есть
@@ -128,7 +128,7 @@ public class UpdateScheduler {
               .url(url)
               .description(format(url, details))
               .tgChatIds(List.copyOf(subscribers));
-      botClient.sendUpdate(update);
+      notificationSender.send(update);
       log.info("Отправлено обновление по {} для {} подписчиков", url, subscribers.size());
     }
 
