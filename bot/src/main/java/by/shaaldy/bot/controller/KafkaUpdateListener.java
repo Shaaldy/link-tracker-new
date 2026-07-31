@@ -1,7 +1,5 @@
 package by.shaaldy.bot.controller;
 
-import by.shaaldy.bot.service.UpdateValidator;
-import by.shaaldy.bot.service.UpdateProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
