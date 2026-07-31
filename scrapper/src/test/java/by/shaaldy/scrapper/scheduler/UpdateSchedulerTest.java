@@ -20,11 +20,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.client.LinkSourceRouter;
 import by.shaaldy.scrapper.client.UpdateChecker;
-import by.shaaldy.scrapper.client.bot.BotClient;
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.Link;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.dto.bot.LinkUpdate;
+import by.shaaldy.scrapper.notification.NotificationSender;
 import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
@@ -35,7 +35,7 @@ class UpdateSchedulerTest {
   @Mock LinkPollingRepository polling;
   @Mock SubscriptionRepository repository;
   @Mock LinkSourceRouter router;
-  @Mock BotClient botClient;
+  @Mock NotificationSender notificationSender;
   @Mock UpdateChecker checker;
   @Mock AppProperties properties;
 
@@ -54,7 +54,7 @@ class UpdateSchedulerTest {
     lenient().when(sched.batchSize()).thenReturn(100);
     lenient().when(sched.parallelism()).thenReturn(4);
     lenient().when(properties.scheduler()).thenReturn(sched);
-    scheduler = new UpdateScheduler(polling, repository, router, botClient, properties);
+    scheduler = new UpdateScheduler(polling, repository, router, notificationSender, properties);
   }
 
   /** Первый findBatch отдаёт батч, второй — пусто (иначе бесконечный цикл). */
@@ -76,7 +76,7 @@ class UpdateSchedulerTest {
     scheduler.poll();
 
     ArgumentCaptor<LinkUpdate> captor = ArgumentCaptor.forClass(LinkUpdate.class);
-    verify(botClient).sendUpdate(captor.capture());
+    verify(notificationSender).send(captor.capture());
     assertThat(captor.getValue().getTgChatIds()).containsExactlyInAnyOrder(10L, 20L);
     assertThat(captor.getValue().getDescription()).contains("author", "preview");
     verify(polling).updateCheckedAt(1L, FRESH);
@@ -91,7 +91,7 @@ class UpdateSchedulerTest {
 
     scheduler.poll();
 
-    verify(botClient, never()).sendUpdate(any());
+    verify(notificationSender, never()).send(any());
     verify(polling, never()).updateCheckedAt(anyLong(), any());
     verify(checker, never()).fetchDetails(any()); // экономия: детали не тянем
   }
@@ -106,7 +106,7 @@ class UpdateSchedulerTest {
 
     scheduler.poll();
 
-    verify(botClient, never()).sendUpdate(any());
+    verify(notificationSender, never()).send(any());
     verify(polling).updateCheckedAt(1L, FRESH);
   }
 
@@ -124,7 +124,7 @@ class UpdateSchedulerTest {
 
     scheduler.poll();
 
-    verify(botClient).sendUpdate(any());
+    verify(notificationSender).send(any());
     verify(polling).updateCheckedAt(2L, FRESH);
   }
 
@@ -147,6 +147,6 @@ class UpdateSchedulerTest {
     scheduler.poll();
 
     verify(polling, times(2)).findBatch(any(Cursor.class), any(Instant.class), eq(2));
-    verify(botClient, times(2)).sendUpdate(any());
+    verify(notificationSender, times(2)).send(any());
   }
 }

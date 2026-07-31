@@ -21,7 +21,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import by.shaaldy.scrapper.dto.scrapper.*;
 
 @Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = "app.message-transport=HTTP")
 class ScrapperEndToEndIT {
 
   @ServiceConnection
