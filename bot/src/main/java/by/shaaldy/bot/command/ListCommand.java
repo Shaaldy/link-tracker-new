@@ -6,14 +6,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
 import by.shaaldy.bot.client.ScrapperApiException;
-import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
+import by.shaaldy.bot.service.LinkQueryService;
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class ListCommand implements Command {
-  private final ScrapperClient scrapperClient;
+  private final LinkQueryService linkQueryService;
 
   @Override
   public String command() {
@@ -33,8 +33,8 @@ public class ListCommand implements Command {
     try {
       ListLinksResponse response =
           (tag == null || tag.isBlank())
-              ? scrapperClient.listLinks(chatId)
-              : scrapperClient.listLinksByTag(chatId, tag);
+              ? linkQueryService.listLinks(chatId)
+              : linkQueryService.listLinksByTag(chatId, tag);
 
       if (response.getSize() == null || response.getSize() == 0) {
         return (tag == null || tag.isBlank())

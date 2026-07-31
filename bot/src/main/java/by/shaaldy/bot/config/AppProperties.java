@@ -22,7 +22,7 @@ public record AppProperties(
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
   }
 
-  public record Cache(@NotNull Duration listTtl) {}
+  public record Cache(boolean enabled, @NotNull Duration listTtl) {}
 
   public enum MessageTransport {
     KAFKA,

@@ -8,11 +8,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
 import by.shaaldy.bot.client.ScrapperApiException;
-import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
 import by.shaaldy.bot.dto.scrapper.TagRequest;
+import by.shaaldy.bot.service.LinkQueryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,7 +23,7 @@ public class DialogHandler {
 
   private static final String SKIP = "-";
 
-  private final ScrapperClient scrapperClient;
+  private final LinkQueryService linkQueryService;
   private final DialogStateHolder holder;
 
   public String handle(long chatId, String text) {
@@ -61,7 +61,7 @@ public class DialogHandler {
     try {
       AddLinkRequest request =
           new AddLinkRequest().link(URI.create(ctx.getLink())).tags(tags).filters(filters);
-      LinkResponse added = scrapperClient.addLink(chatId, request);
+      LinkResponse added = linkQueryService.addLink(chatId, request);
       return "Ссылка добавлена: " + added.getUrl();
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 409) return "Эта ссылка уже отслеживается.";
@@ -79,7 +79,7 @@ public class DialogHandler {
   private String onUntrack(long chatId, String text) {
     try {
       RemoveLinkRequest request = new RemoveLinkRequest().link(URI.create(text.trim()));
-      LinkResponse removed = scrapperClient.removeLink(chatId, request);
+      LinkResponse removed = linkQueryService.removeLink(chatId, request);
       return "Ссылка удалена: " + removed.getUrl();
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 404) return "Эта ссылка не отслеживается.";
@@ -127,10 +127,10 @@ public class DialogHandler {
       }
       TagRequest request = new TagRequest().url(URI.create(ctx.getSelectedUrl())).tag(tag);
       if (ctx.getTagAction().equals("add")) {
-        scrapperClient.addTag(chatId, request);
+        linkQueryService.addTag(chatId, request);
         return "Тег «" + tag + "» добавлен к " + ctx.getSelectedUrl();
       } else {
-        scrapperClient.removeTag(chatId, request);
+        linkQueryService.removeTag(chatId, request);
         return "Тег «" + tag + "» убран у " + ctx.getSelectedUrl();
       }
     } catch (ScrapperApiException e) {

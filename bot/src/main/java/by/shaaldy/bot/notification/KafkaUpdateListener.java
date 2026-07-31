@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.message-transport", havingValue = "KAFKA")
-public class UpdateListener {
+public class KafkaUpdateListener {
 
   private final UpdateProcessor processor;
 
