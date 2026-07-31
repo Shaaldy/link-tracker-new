@@ -1,10 +1,12 @@
-package by.shaaldy.bot.notification;
+package by.shaaldy.bot.controller;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.bot.dto.bot.LinkUpdate;
+import by.shaaldy.bot.service.UpdateProcessor;
+import by.shaaldy.bot.service.UpdateValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,4 +1,4 @@
-package by.shaaldy.bot.notification;
+package by.shaaldy.bot.service;
 
 import by.shaaldy.bot.dto.bot.LinkUpdate;
 

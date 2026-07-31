@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import by.shaaldy.bot.dto.bot.LinkUpdate;
-import by.shaaldy.bot.notification.UpdateProcessor;
+import by.shaaldy.bot.service.UpdateProcessor;
 import lombok.RequiredArgsConstructor;
 
 @RestController
