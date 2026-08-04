@@ -1,4 +1,4 @@
-package by.shaaldy.bot.service;
+package by.shaaldy.bot.service.cache;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
