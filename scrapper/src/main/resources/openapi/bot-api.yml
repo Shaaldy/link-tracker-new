@@ -52,7 +52,12 @@ components:
           format: uri
         description:
           type: string
-        tgChatIds:
+        instantTgChatIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        digestTgChatIds:
           type: array
           items:
             type: integer
