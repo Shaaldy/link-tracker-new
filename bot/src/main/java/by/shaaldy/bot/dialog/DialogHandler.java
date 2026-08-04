@@ -4,8 +4,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import by.shaaldy.bot.service.NotificationMode;
-import by.shaaldy.bot.service.NotificationModeService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
@@ -14,7 +12,9 @@ import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
 import by.shaaldy.bot.dto.scrapper.TagRequest;
-import by.shaaldy.bot.service.LinkQueryService;
+import by.shaaldy.bot.service.cache.LinkQueryService;
+import by.shaaldy.bot.service.digest.NotificationMode;
+import by.shaaldy.bot.service.digest.NotificationModeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

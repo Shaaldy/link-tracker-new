@@ -1,4 +1,4 @@
-package by.shaaldy.bot.service;
+package by.shaaldy.bot.service.digest;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;

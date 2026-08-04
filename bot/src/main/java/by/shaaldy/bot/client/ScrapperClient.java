@@ -50,8 +50,7 @@ public interface ScrapperClient {
       @RequestHeader(CHAT_ID_HEADER) long chatId, @RequestBody TagRequest request);
 
   @PutExchange("/tg-chat/{id}/notification-mode")
-  void updateNotificationMode(
-          @PathVariable long id, @RequestBody NotificationModeRequest request);
+  void updateNotificationMode(@PathVariable long id, @RequestBody NotificationModeRequest request);
 
   @GetExchange("/notifications/digest-recipients")
   List<Long> findDigestRecipients(@RequestParam int hour);
