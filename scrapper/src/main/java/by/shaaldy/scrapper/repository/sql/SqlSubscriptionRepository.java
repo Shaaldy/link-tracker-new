@@ -3,10 +3,7 @@ package by.shaaldy.scrapper.repository.sql;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -249,5 +246,36 @@ public class SqlSubscriptionRepository implements SubscriptionRepository {
     List<String> tags = List.of((String[]) rs.getArray("tags").getArray());
     List<String> filters = List.of((String[]) rs.getArray("filters").getArray());
     return new TrackedLink(id, url, tags, filters);
+  }
+
+  @Override
+  public boolean updateNotificationMode(long chatId, String mode, Integer digestHour) {
+    String sql =
+        """
+                    UPDATE chats
+                    SET notification_mode = :mode,
+                        digest_hour = :digestHour
+                    WHERE chat_id = :chatId
+                    """;
+    Map<String, Object> params = new HashMap<>();
+    params.put("chatId", chatId);
+    params.put("mode", mode);
+    params.put(
+        "digestHour", digestHour); // null при INSTANT — NamedParameterJdbcTemplate кладёт NULL
+    int rows = jdbc.update(sql, params);
+    return rows > 0;
+  }
+
+  @Override
+  public Set<Long> findDigestRecipients(int hour) {
+    String sql =
+        """
+                    SELECT chat_id
+                    FROM chats
+                    WHERE notification_mode = 'DIGEST'
+                      AND digest_hour = :hour
+                    """;
+    List<Long> ids = jdbc.queryForList(sql, Map.of("hour", hour), Long.class);
+    return new HashSet<>(ids);
   }
 }

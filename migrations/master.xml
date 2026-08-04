@@ -35,5 +35,19 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="add_chat_notification_mode" author="shaaldy">
+        <sqlFile
+                path="changesets/add_chat_notification_mode.sql"
+                relativeToChangelogFile="true"
+                splitStatements="true"
+                endDelimiter=";"/>
+        <rollback>
+            <sqlFile
+                    path="changesets/drop_chat_notification_mode.sql"
+                    relativeToChangelogFile="true"
+                    splitStatements="true"
+                    endDelimiter=";"/>
+        </rollback>
+    </changeSet>
 
 </databaseChangeLog>

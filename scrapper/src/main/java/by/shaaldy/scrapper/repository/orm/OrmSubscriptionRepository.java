@@ -2,6 +2,7 @@ package by.shaaldy.scrapper.repository.orm;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -182,6 +183,24 @@ public class OrmSubscriptionRepository implements SubscriptionRepository {
       chatLinks.save(cl);
     }
     return removed;
+  }
+
+  @Override
+  public boolean updateNotificationMode(long chatId, String mode, Integer digestHour) {
+    Optional<ChatEntity> found = chats.findById(chatId);
+    if (found.isEmpty()) {
+      return false;
+    }
+    ChatEntity chat = found.get();
+    chat.setNotificationMode(mode);
+    chat.setDigestHour(digestHour);
+    chats.save(chat);
+    return true;
+  }
+
+  @Override
+  public Set<Long> findDigestRecipients(int hour) {
+    return chats.findDigestRecipients(hour);
   }
 
   /**

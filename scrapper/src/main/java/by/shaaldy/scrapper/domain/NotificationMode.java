@@ -1,4 +1,6 @@
 package by.shaaldy.scrapper.domain;
 
-public class NotificationMode {
+public enum NotificationMode {
+  INSTANT,
+  DIGEST
 }

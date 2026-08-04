@@ -32,4 +32,8 @@ public interface SubscriptionRepository {
   boolean addTag(long chatId, URI url, String tag);
 
   boolean removeTag(long chatId, URI url, String tag);
+
+  boolean updateNotificationMode(long chatId, String mode, Integer digestHour);
+
+  Set<Long> findDigestRecipients(int hour);
 }
