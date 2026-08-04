@@ -15,5 +15,4 @@ public interface ChatLinkJpaRepository extends JpaRepository<ChatLinkEntity, Cha
   /** Все подписки на ссылку (для findSubscribers — обратная навигация). */
   List<ChatLinkEntity> findById_LinkId(Long linkId);
 
-  boolean existsById_ChatIdAndId_LinkId(Long chatId, Long linkId);
 }
