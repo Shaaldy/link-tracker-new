@@ -1,4 +1,6 @@
 package by.shaaldy.bot.service;
 
-public class NotificationMode {
+public enum NotificationMode {
+    INSTANT,
+    DIGEST
 }
