@@ -7,7 +7,7 @@ import org.springframework.web.client.RestClientException;
 
 import by.shaaldy.bot.client.ScrapperApiException;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
-import by.shaaldy.bot.service.LinkQueryService;
+import by.shaaldy.bot.service.cache.LinkQueryService;
 import lombok.RequiredArgsConstructor;
 
 @Component
