@@ -1,5 +1,7 @@
 package by.shaaldy.bot.service;
 
+import java.util.List;
+
 import by.shaaldy.bot.dto.bot.LinkUpdate;
 
 public final class UpdateValidator {
@@ -13,8 +15,12 @@ public final class UpdateValidator {
     if (update.getUrl() == null) {
       throw new InvalidUpdateException("url is null");
     }
-    if (update.getTgChatIds() == null || update.getTgChatIds().isEmpty()) {
+    if (isEmpty(update.getInstantTgChatIds()) && isEmpty(update.getDigestTgChatIds())) {
       throw new InvalidUpdateException("tgChatIds is empty");
     }
+  }
+
+  private static boolean isEmpty(List<Long> ids) {
+    return ids == null || ids.isEmpty();
   }
 }

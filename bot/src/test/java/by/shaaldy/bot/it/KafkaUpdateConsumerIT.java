@@ -32,7 +32,8 @@ class KafkaUpdateConsumerIT extends AbstractKafkaIT {
             .id(1L)
             .url(URI.create("https://github.com/a/b"))
             .description("новый релиз")
-            .tgChatIds(List.of(100L, 200L));
+            .instantTgChatIds(List.of(100L, 200L))
+            .digestTgChatIds(List.of());
 
     kafkaTemplate.send(properties.kafka().topics().updates(), "1", update);
 
