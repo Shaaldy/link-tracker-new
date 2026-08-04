@@ -1,7 +1,9 @@
-package by.shaaldy.bot.service;
+package by.shaaldy.bot.service.cache;
 
-import java.util.Set;
 
+import by.shaaldy.bot.config.cache.RedisCacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.bot.client.ScrapperClient;
@@ -13,24 +15,11 @@ public class RegistrationService {
 
   private final ScrapperClient scrapperClient;
 
-  private final Set<Long> registered;
-
+  @Cacheable(cacheNames = RedisCacheConfig.REGISTRATION_CACHE, key = "#chatId", unless = "!#result")
   public boolean isRegistered(long chatId) {
-    if (registered.contains(chatId)) {
-      return true;
-    }
-    boolean existsInDb = scrapperClient.existChat(chatId);
-    if (existsInDb) {
-      registered.add(chatId);
-    }
-    return existsInDb;
+    return Boolean.TRUE.equals(scrapperClient.existChat(chatId));
   }
 
-  public void markRegistered(long chatId) {
-    registered.add(chatId);
-  }
-
-  public void markUnregistered(long chatId) {
-    registered.remove(chatId);
-  }
+  @CacheEvict(cacheNames = RedisCacheConfig.REGISTRATION_CACHE, key = "#chatId")
+  public void markUnregistered(long chatId) {}
 }

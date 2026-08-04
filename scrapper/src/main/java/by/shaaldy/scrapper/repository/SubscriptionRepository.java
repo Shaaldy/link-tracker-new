@@ -36,4 +36,8 @@ public interface SubscriptionRepository {
   boolean updateNotificationMode(long chatId, String mode, Integer digestHour);
 
   Set<Long> findDigestRecipients(int hour);
+
+  List<SubscriberMode> findSubscribersWithMode(URI url);
+
+  record SubscriberMode(long chatId, String mode) {}
 }

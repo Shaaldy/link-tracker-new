@@ -4,7 +4,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -119,17 +119,31 @@ public class UpdateScheduler {
       return; // обновлений нет
     }
 
-    Set<Long> subscribers = subscriptionRepository.findSubscribers(url);
+    List<SubscriptionRepository.SubscriberMode> subscribers =
+        subscriptionRepository.findSubscribersWithMode(url);
     if (!subscribers.isEmpty()) {
       UpdateDetails details = checker.fetchDetails(url);
+
+      Map<Boolean, List<Long>> byMode =
+          subscribers.stream()
+              .collect(
+                  Collectors.partitioningBy(
+                      s -> s.mode().equals("DIGEST"),
+                      Collectors.mapping(
+                          SubscriptionRepository.SubscriberMode::chatId, Collectors.toList())));
       LinkUpdate update =
           new LinkUpdate()
               .id(link.getId())
               .url(url)
               .description(format(url, details))
-              .tgChatIds(List.copyOf(subscribers));
+              .instantTgChatIds(byMode.get(false))
+              .digestTgChatIds(byMode.get(true));
       notificationSender.send(update);
-      log.info("Отправлено обновление по {} для {} подписчиков", url, subscribers.size());
+      log.info(
+          "Отправлено обновление по {}: instant={}, digest={}",
+          url,
+          byMode.get(false).size(),
+          byMode.get(true).size());
     }
 
     pollingRepository.updateCheckedAt(link.getId(), latest);

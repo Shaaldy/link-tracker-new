@@ -278,4 +278,20 @@ public class SqlSubscriptionRepository implements SubscriptionRepository {
     List<Long> ids = jdbc.queryForList(sql, Map.of("hour", hour), Long.class);
     return new HashSet<>(ids);
   }
+
+  @Override
+  public List<SubscriberMode> findSubscribersWithMode(URI url) {
+    String sql =
+        """
+                    SELECT cl.chat_id, c.notification_mode
+                    FROM chat_links cl
+                    JOIN chats c ON c.chat_id = cl.chat_id
+                    WHERE cl.link_id = (SELECT id FROM links WHERE url = :url)
+                    """;
+    return jdbc.query(
+        sql,
+        Map.of("url", url.toString()),
+        (rs, rowNum) ->
+            new SubscriberMode(rs.getLong("chat_id"), rs.getString("notification_mode")));
+  }
 }

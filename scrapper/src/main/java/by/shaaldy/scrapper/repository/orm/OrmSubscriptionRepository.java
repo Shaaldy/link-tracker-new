@@ -203,6 +203,23 @@ public class OrmSubscriptionRepository implements SubscriptionRepository {
     return chats.findDigestRecipients(hour);
   }
 
+  @Override
+  public List<SubscriberMode> findSubscribersWithMode(URI url) {
+    return links
+        .findByUrl(url.toString())
+        .map(
+            link ->
+                chatLinks.findById_LinkId(link.getId()).stream()
+                    .map(cl -> cl.getId().getChatId())
+                    .toList())
+        .map(
+            chatIds ->
+                chats.findAllById(chatIds).stream()
+                    .map(c -> new SubscriberMode(c.getChatId(), c.getNotificationMode()))
+                    .toList())
+        .orElse(List.of());
+  }
+
   /**
    * Конвертирует подписку в домен. Требует url ссылки, которого нет в ChatLinkEntity — подтягиваем
    * LinkEntity по link_id. Внутри транзакции, LAZY-коллекции доступны.

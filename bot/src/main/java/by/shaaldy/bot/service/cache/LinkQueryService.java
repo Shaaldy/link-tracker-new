@@ -5,7 +5,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import by.shaaldy.bot.client.ScrapperClient;
-import by.shaaldy.bot.config.RedisCacheConfig;
+import by.shaaldy.bot.config.cache.RedisCacheConfig;
 import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
