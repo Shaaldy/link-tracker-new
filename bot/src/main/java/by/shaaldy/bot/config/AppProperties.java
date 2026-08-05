@@ -16,7 +16,8 @@ public record AppProperties(
     @NotBlank String scrapperBaseUrl,
     @NotNull MessageTransport messageTransport,
     @Valid @NotNull Kafka kafka,
-    @Valid @NotNull Cache cache) {
+    @Valid @NotNull Cache cache,
+    @Valid @NotNull Digest digest) {
   public record Kafka(@Valid @NotNull Topics topics) {
 
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
@@ -28,4 +29,6 @@ public record AppProperties(
     KAFKA,
     HTTP
   }
+
+  public record Digest(@NotBlank String zone) {}
 }
