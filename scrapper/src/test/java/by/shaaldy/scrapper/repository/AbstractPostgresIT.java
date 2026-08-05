@@ -10,7 +10,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @SpringBootTest
-abstract class AbstractPostgresIT {
+public abstract class AbstractPostgresIT {
 
   @Autowired JdbcTemplate jdbcTemplate;
 

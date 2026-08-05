@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
@@ -26,9 +27,10 @@ public abstract class AbstractRedisIT {
   }
 
   @Autowired CacheManager cacheManager;
+  @Autowired RedisConnectionFactory connectionFactory;
 
   @BeforeEach
-  void clearCaches() {
-    cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+  void clearRedis() {
+    connectionFactory.getConnection().serverCommands().flushAll();
   }
 }
