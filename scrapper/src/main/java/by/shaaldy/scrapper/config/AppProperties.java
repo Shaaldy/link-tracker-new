@@ -19,7 +19,8 @@ public record AppProperties(
     @NotNull AccessType accessType,
     @Valid @NotNull Scheduler scheduler,
     @NotNull MessageTransport messageTransport,
-    @Valid @NotNull Kafka kafka) {
+    @Valid @NotNull Kafka kafka,
+    @Valid @NotNull HttpClient httpClient) {
 
   public record GitHub(@NotBlank String baseUrl, String token) {}
 
@@ -40,5 +41,9 @@ public record AppProperties(
   public enum MessageTransport {
     KAFKA,
     HTTP
+  }
+
+  public record HttpClient(@Valid @NotNull Timeout timeout) {
+    public record Timeout(@NotNull Duration connect, @NotNull Duration read) {}
   }
 }
