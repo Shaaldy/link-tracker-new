@@ -17,7 +17,8 @@ public record AppProperties(
     @NotNull MessageTransport messageTransport,
     @Valid @NotNull Kafka kafka,
     @Valid @NotNull Cache cache,
-    @Valid @NotNull Digest digest) {
+    @Valid @NotNull Digest digest,
+    @Valid @NotNull HttpClient httpClient) {
   public record Kafka(@Valid @NotNull Topics topics) {
 
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
@@ -31,4 +32,8 @@ public record AppProperties(
   }
 
   public record Digest(@NotBlank String zone) {}
+
+  public record HttpClient(@Valid @NotNull Timeout timeout) {
+    public record Timeout(@NotNull Duration connect, @NotNull Duration read) {}
+  }
 }
