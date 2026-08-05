@@ -1,7 +1,9 @@
 package by.shaaldy.scrapper.config;
 
 import java.time.Duration;
+import java.util.List;
 
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -20,7 +22,8 @@ public record AppProperties(
     @Valid @NotNull Scheduler scheduler,
     @NotNull MessageTransport messageTransport,
     @Valid @NotNull Kafka kafka,
-    @Valid @NotNull HttpClient httpClient) {
+    @Valid @NotNull HttpClient httpClient,
+    @Valid @NotNull Retry retry) {
 
   public record GitHub(@NotBlank String baseUrl, String token) {}
 
@@ -46,4 +49,8 @@ public record AppProperties(
   public record HttpClient(@Valid @NotNull Timeout timeout) {
     public record Timeout(@NotNull Duration connect, @NotNull Duration read) {}
   }
+  public record Retry(
+          @Positive int maxAttempts,
+          @NotNull Duration waitDuration,
+          @NotEmpty List<Integer> retryableStatusCodes) {}
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -25,6 +26,7 @@ public class StackOverflowClient implements UpdateChecker {
 
   private final StackOverflowApi api;
   private final AppProperties properties;
+  private final RetryRegistry retryRegistry;
 
   @Override
   public boolean supports(URI url) {
@@ -34,7 +36,7 @@ public class StackOverflowClient implements UpdateChecker {
   @Override
   public Instant fetchLastActivity(URI url) {
     long id = extractId(url);
-    StackOverflowResponse.Item question = firstItem(api.getQuestion(id, "stackoverflow", key()));
+    StackOverflowResponse.Item question = firstItem(getQuestion(id, key()));
     return question == null ? Instant.EPOCH : Instant.ofEpochSecond(question.lastActivityDate());
   }
 
@@ -44,7 +46,7 @@ public class StackOverflowClient implements UpdateChecker {
     String k = key();
 
     // Тема вопроса — общая для всех типов обновления (ДЗ: "текст темы вопроса").
-    StackOverflowResponse.Item question = firstItem(api.getQuestion(id, "stackoverflow", k));
+    StackOverflowResponse.Item question = firstItem(getQuestion(id, k));
     String title = question == null ? null : question.title();
 
     // Три кандидата: свежайший ответ, свежайший комментарий, само событие вопроса (правка).
@@ -60,13 +62,31 @@ public class StackOverflowClient implements UpdateChecker {
                   Instant.ofEpochSecond(question.creationDate()),
                   TextPreview.preview(question.body()))));
     }
-    addBodyCandidate(candidates, firstItem(api.getAnswers(id, "stackoverflow", k)), title);
-    addBodyCandidate(candidates, firstItem(api.getComments(id, "stackoverflow", k)), title);
+    addBodyCandidate(candidates, firstItem(getAnswers(id, k)), title);
+    addBodyCandidate(candidates, firstItem(getComments(id, k)), title);
 
     return candidates.stream()
         .max(Comparator.comparingLong(Candidate::at))
         .map(Candidate::details)
         .orElseGet(() -> new UpdateDetails(title, null, null, null));
+  }
+
+  private StackOverflowResponse getQuestion(long id, String key) {
+    return retryRegistry
+            .retry("stackoverflow-getQuestion")
+            .executeSupplier(() -> api.getQuestion(id, "stackoverflow", key));
+  }
+
+  private StackOverflowResponse getAnswers(long id, String key) {
+    return retryRegistry
+            .retry("stackoverflow-getAnswers")
+            .executeSupplier(() -> api.getAnswers(id, "stackoverflow", key));
+  }
+
+  private StackOverflowResponse getComments(long id, String key) {
+    return retryRegistry
+            .retry("stackoverflow-getComments")
+            .executeSupplier(() -> api.getComments(id, "stackoverflow", key));
   }
 
   private static void addBodyCandidate(
