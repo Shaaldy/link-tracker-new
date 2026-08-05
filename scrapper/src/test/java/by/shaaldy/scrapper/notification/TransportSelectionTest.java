@@ -52,7 +52,7 @@ class TransportSelectionTest {
         havingValue = "HTTP",
         matchIfMissing = true)
     NotificationSender httpSender() {
-      return new HttpNotificationSender(null); // делегата не вызываем — проверяем только тип
+      return new HttpNotificationSender(null, null); // делегата не вызываем — проверяем только тип
     }
 
     @Bean

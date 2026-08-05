@@ -10,19 +10,19 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.UpdateDetails;
+import io.github.resilience4j.retry.RetryRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class StackOverflowClientDetailsTest {
 
   @Mock StackOverflowApi api;
   @Mock AppProperties properties;
-  @InjectMocks StackOverflowClient client;
+  StackOverflowClient client;
 
   private static final URI URL = URI.create("https://stackoverflow.com/questions/12345");
   private static final long OLD = 1_700_000_000L; // раньше
@@ -34,6 +34,7 @@ class StackOverflowClientDetailsTest {
     AppProperties.StackOverflow so = org.mockito.Mockito.mock(AppProperties.StackOverflow.class);
     lenient().when(so.key()).thenReturn(null);
     lenient().when(properties.stackoverflow()).thenReturn(so);
+    client = new StackOverflowClient(api, properties, RetryRegistry.ofDefaults());
   }
 
   private StackOverflowResponse question(long lastActivity) {
