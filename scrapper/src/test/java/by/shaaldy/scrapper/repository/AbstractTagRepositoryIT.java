@@ -16,7 +16,7 @@ import by.shaaldy.scrapper.domain.TrackedLink;
  * поэтому один набор проверяет обе реализации — наследники лишь задают access-type. Обе ветки
  * обязаны вести себя одинаково за общим контрактом.
  */
-abstract class AbstractTagRepositoryIT extends AbstractPostgresIT {
+public abstract class AbstractTagRepositoryIT extends AbstractPostgresIT {
 
   @Autowired SubscriptionRepository repository;
 

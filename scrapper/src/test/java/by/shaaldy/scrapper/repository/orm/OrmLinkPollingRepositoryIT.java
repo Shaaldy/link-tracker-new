@@ -1,4 +1,4 @@
-package by.shaaldy.scrapper.repository;
+package by.shaaldy.scrapper.repository.orm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
 import by.shaaldy.scrapper.domain.Link;
+import by.shaaldy.scrapper.repository.AbstractPostgresIT;
+import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
+import by.shaaldy.scrapper.repository.SubscriptionRepository;
 
 @TestPropertySource(properties = "app.access-type=ORM")
 class OrmLinkPollingRepositoryIT extends AbstractPostgresIT {

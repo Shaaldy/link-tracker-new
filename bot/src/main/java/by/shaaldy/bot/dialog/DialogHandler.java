@@ -8,11 +8,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
 import by.shaaldy.bot.client.ScrapperApiException;
-import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
 import by.shaaldy.bot.dto.scrapper.TagRequest;
+import by.shaaldy.bot.service.cache.LinkQueryService;
+import by.shaaldy.bot.service.digest.NotificationMode;
+import by.shaaldy.bot.service.digest.NotificationModeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,8 +25,9 @@ public class DialogHandler {
 
   private static final String SKIP = "-";
 
-  private final ScrapperClient scrapperClient;
+  private final LinkQueryService linkQueryService;
   private final DialogStateHolder holder;
+  private final NotificationModeService modeService;
 
   public String handle(long chatId, String text) {
     DialogContext ctx = holder.get(chatId);
@@ -36,6 +39,8 @@ public class DialogHandler {
       case AWAITING_TAG_LINK -> onTagLink(ctx, text);
       case AWAITING_TAG_ACTION -> onTagAction(ctx, text);
       case AWAITING_TAG_NAME -> onTagName(chatId, ctx, text);
+      case AWAITING_MODE -> onMode(chatId, ctx, text);
+      case AWAITING_DIGEST_HOUR -> onDigestHour(chatId, text);
       case IDLE -> "Диалог не активен. Наберите /help.";
     };
   }
@@ -61,7 +66,7 @@ public class DialogHandler {
     try {
       AddLinkRequest request =
           new AddLinkRequest().link(URI.create(ctx.getLink())).tags(tags).filters(filters);
-      LinkResponse added = scrapperClient.addLink(chatId, request);
+      LinkResponse added = linkQueryService.addLink(chatId, request);
       return "Ссылка добавлена: " + added.getUrl();
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 409) return "Эта ссылка уже отслеживается.";
@@ -79,7 +84,7 @@ public class DialogHandler {
   private String onUntrack(long chatId, String text) {
     try {
       RemoveLinkRequest request = new RemoveLinkRequest().link(URI.create(text.trim()));
-      LinkResponse removed = scrapperClient.removeLink(chatId, request);
+      LinkResponse removed = linkQueryService.removeLink(chatId, request);
       return "Ссылка удалена: " + removed.getUrl();
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 404) return "Эта ссылка не отслеживается.";
@@ -127,10 +132,10 @@ public class DialogHandler {
       }
       TagRequest request = new TagRequest().url(URI.create(ctx.getSelectedUrl())).tag(tag);
       if (ctx.getTagAction().equals("add")) {
-        scrapperClient.addTag(chatId, request);
+        linkQueryService.addTag(chatId, request);
         return "Тег «" + tag + "» добавлен к " + ctx.getSelectedUrl();
       } else {
-        scrapperClient.removeTag(chatId, request);
+        linkQueryService.removeTag(chatId, request);
         return "Тег «" + tag + "» убран у " + ctx.getSelectedUrl();
       }
     } catch (ScrapperApiException e) {
@@ -145,5 +150,29 @@ public class DialogHandler {
     } finally {
       holder.reset(chatId);
     }
+  }
+
+  private String onMode(long chatId, DialogContext ctx, String text) {
+    String choice = text.strip().toLowerCase();
+    return switch (choice) {
+      case "instant", "сразу", "1" -> {
+        holder.reset(chatId);
+        yield modeService.apply(chatId, NotificationMode.INSTANT, null);
+      }
+      case "digest", "дайджест", "2" -> {
+        ctx.setState(DialogState.AWAITING_DIGEST_HOUR);
+        yield "Во сколько присылать дайджест? Введите час (0–23):";
+      }
+      default -> "Не понял. Введите «instant» или «digest» (либо 1 / 2):";
+    };
+  }
+
+  private String onDigestHour(long chatId, String text) {
+    Integer hour = modeService.parseHour(text);
+    if (hour == null) {
+      return "Час должен быть числом от 0 до 23. Попробуйте ещё раз:";
+    }
+    holder.reset(chatId);
+    return modeService.apply(chatId, NotificationMode.DIGEST, hour);
   }
 }

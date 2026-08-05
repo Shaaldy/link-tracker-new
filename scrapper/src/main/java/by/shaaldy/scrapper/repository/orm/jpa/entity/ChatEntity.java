@@ -31,6 +31,12 @@ public class ChatEntity {
   @Column(name = "created_at", nullable = false, updatable = false)
   private OffsetDateTime createdAt;
 
+  @Column(name = "notification_mode", nullable = false)
+  private String notificationMode = "INSTANT"; // дефолт как в БД
+
+  @Column(name = "digest_hour")
+  private Integer digestHour;
+
   public ChatEntity(Long chatId) {
     this.chatId = chatId;
   }

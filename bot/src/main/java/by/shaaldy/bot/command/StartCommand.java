@@ -27,12 +27,12 @@ public class StartCommand implements Command {
   @Override
   public String execute(long chatId, String text) {
     try {
-      scrapperClient.registerChat(chatId);
-      registrationService.markRegistered(chatId);
-      return "Привет! Вы зарегистрированы. Наберите /help для списка команд.";
+      boolean wasNew = registrationService.registerIfAbsent(chatId);
+      return wasNew
+          ? "Привет! Вы зарегистрированы. Наберите /help для списка команд."
+          : "Вы уже зарегистрированы. Наберите /help.";
     } catch (ScrapperApiException e) {
       if (e.getStatus().value() == 409) {
-        registrationService.markRegistered(chatId);
         return "Вы уже зарегистрированы. Наберите /help.";
       }
       return e.userMessage();

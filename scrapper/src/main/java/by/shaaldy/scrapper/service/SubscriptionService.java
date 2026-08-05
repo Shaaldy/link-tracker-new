@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
+import by.shaaldy.scrapper.domain.NotificationMode;
 import by.shaaldy.scrapper.domain.TrackedLink;
 import by.shaaldy.scrapper.exception.ChatAlreadyExistsException;
 import by.shaaldy.scrapper.exception.ChatNotFoundException;
@@ -126,6 +127,23 @@ public class SubscriptionService {
       log.info("Чат {} убрал тег '{}' у {}", chatId, tag, url);
     }
     return removed;
+  }
+
+  public void updateNotificationMode(long chatId, NotificationMode mode, Integer digestHour) {
+    if (mode == NotificationMode.DIGEST && digestHour == null) {
+      throw new IllegalArgumentException("Для режима DIGEST требуется указать час отправки");
+    }
+    if (mode == NotificationMode.INSTANT && digestHour != null) {
+      throw new IllegalArgumentException("Для режима INSTANT час отправки не задаётся");
+    }
+    boolean updated = repository.updateNotificationMode(chatId, mode.name(), digestHour);
+    if (!updated) {
+      throw new ChatNotFoundException(chatId); // или как у тебя называется 404-исключение сервиса
+    }
+  }
+
+  public Set<Long> findDigestRecipients(int hour) {
+    return repository.findDigestRecipients(hour);
   }
 
   /* --- helpers --- */

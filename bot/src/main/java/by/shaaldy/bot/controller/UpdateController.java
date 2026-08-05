@@ -1,35 +1,25 @@
 package by.shaaldy.bot.controller;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import by.shaaldy.bot.dto.bot.LinkUpdate;
-import by.shaaldy.bot.telegram.MessageSender;
+import by.shaaldy.bot.service.UpdateProcessor;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequiredArgsConstructor
-@Slf4j
+@ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP", matchIfMissing = true)
 public class UpdateController {
 
-  private final MessageSender messageSender;
+  private final UpdateProcessor processor;
 
   @PostMapping("/updates")
   public ResponseEntity<Void> receiveUpdate(@RequestBody LinkUpdate update) {
-    update
-        .getTgChatIds()
-        .forEach(
-            id ->
-                messageSender.send(
-                    id,
-                    "Обновление по ссылке " + update.getUrl() + "\n" + update.getDescription()));
-    log.info(
-        "Получено обновление ссылки {} для {} чатов",
-        update.getUrl(),
-        update.getTgChatIds().size());
+    processor.process(update);
     return ResponseEntity.ok().build();
   }
 }

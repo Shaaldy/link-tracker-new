@@ -254,6 +254,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+  /tg-chat/{id}/notification-mode:
+    put:
+      operationId: updateNotificationMode
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationModeRequest'
+      responses:
+        '200':
+          description: Режим обновлён
+        '404':
+          description: Чат не найден
+
+  /notifications/digest-recipients:
+    get:
+      operationId: findDigestRecipients
+      parameters:
+        - name: hour
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список chatId для дайджеста в указанный час
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  format: int64
 
 
 components:
@@ -332,3 +373,18 @@ components:
           format: uri
         tag:
           type: string
+
+    NotificationModeRequest:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+          enum:
+            - INSTANT
+            - DIGEST
+        digestHour:
+          type: integer
+          minimum: 0
+          maximum: 23

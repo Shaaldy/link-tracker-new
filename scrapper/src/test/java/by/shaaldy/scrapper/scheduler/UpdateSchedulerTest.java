@@ -9,7 +9,6 @@ import static org.mockito.Mockito.*;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,11 +19,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.client.LinkSourceRouter;
 import by.shaaldy.scrapper.client.UpdateChecker;
-import by.shaaldy.scrapper.client.bot.BotClient;
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.Link;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.dto.bot.LinkUpdate;
+import by.shaaldy.scrapper.notification.NotificationSender;
 import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
@@ -35,7 +34,7 @@ class UpdateSchedulerTest {
   @Mock LinkPollingRepository polling;
   @Mock SubscriptionRepository repository;
   @Mock LinkSourceRouter router;
-  @Mock BotClient botClient;
+  @Mock NotificationSender notificationSender;
   @Mock UpdateChecker checker;
   @Mock AppProperties properties;
 
@@ -54,7 +53,7 @@ class UpdateSchedulerTest {
     lenient().when(sched.batchSize()).thenReturn(100);
     lenient().when(sched.parallelism()).thenReturn(4);
     lenient().when(properties.scheduler()).thenReturn(sched);
-    scheduler = new UpdateScheduler(polling, repository, router, botClient, properties);
+    scheduler = new UpdateScheduler(polling, repository, router, notificationSender, properties);
   }
 
   /** Первый findBatch отдаёт батч, второй — пусто (иначе бесконечный цикл). */
@@ -65,19 +64,24 @@ class UpdateSchedulerTest {
   }
 
   @Test
-  void poll_updatedLink_notifiesOnlyItsSubscribers() {
+  void poll_updatedLink_notifiesSubscribersSplitByMode() {
     URI url = URI.create("https://github.com/a/b");
     singleBatch(link(1L, url, SEEN));
     when(router.route(url)).thenReturn(checker);
     when(checker.fetchLastActivity(url)).thenReturn(FRESH);
     when(checker.fetchDetails(url)).thenReturn(new UpdateDetails("t", "author", FRESH, "preview"));
-    when(repository.findSubscribers(url)).thenReturn(Set.of(10L, 20L));
+    when(repository.findSubscribersWithMode(url))
+        .thenReturn(
+            List.of(
+                new SubscriptionRepository.SubscriberMode(10L, "INSTANT"),
+                new SubscriptionRepository.SubscriberMode(20L, "DIGEST")));
 
     scheduler.poll();
 
     ArgumentCaptor<LinkUpdate> captor = ArgumentCaptor.forClass(LinkUpdate.class);
-    verify(botClient).sendUpdate(captor.capture());
-    assertThat(captor.getValue().getTgChatIds()).containsExactlyInAnyOrder(10L, 20L);
+    verify(notificationSender).send(captor.capture());
+    assertThat(captor.getValue().getInstantTgChatIds()).containsExactly(10L);
+    assertThat(captor.getValue().getDigestTgChatIds()).containsExactly(20L);
     assertThat(captor.getValue().getDescription()).contains("author", "preview");
     verify(polling).updateCheckedAt(1L, FRESH);
   }
@@ -91,7 +95,7 @@ class UpdateSchedulerTest {
 
     scheduler.poll();
 
-    verify(botClient, never()).sendUpdate(any());
+    verify(notificationSender, never()).send(any());
     verify(polling, never()).updateCheckedAt(anyLong(), any());
     verify(checker, never()).fetchDetails(any()); // экономия: детали не тянем
   }
@@ -102,11 +106,11 @@ class UpdateSchedulerTest {
     singleBatch(link(1L, url, SEEN));
     when(router.route(url)).thenReturn(checker);
     when(checker.fetchLastActivity(url)).thenReturn(FRESH);
-    when(repository.findSubscribers(url)).thenReturn(Set.of());
+    when(repository.findSubscribersWithMode(url)).thenReturn(List.of());
 
     scheduler.poll();
 
-    verify(botClient, never()).sendUpdate(any());
+    verify(notificationSender, never()).send(any());
     verify(polling).updateCheckedAt(1L, FRESH);
   }
 
@@ -120,11 +124,12 @@ class UpdateSchedulerTest {
     when(checker.fetchLastActivity(bad)).thenThrow(new RuntimeException("404"));
     when(checker.fetchLastActivity(good)).thenReturn(FRESH);
     when(checker.fetchDetails(good)).thenReturn(new UpdateDetails("t", "a", FRESH, "p"));
-    when(repository.findSubscribers(good)).thenReturn(Set.of(10L));
+    when(repository.findSubscribersWithMode(good))
+        .thenReturn(List.of(new SubscriptionRepository.SubscriberMode(10L, "INSTANT")));
 
     scheduler.poll();
 
-    verify(botClient).sendUpdate(any());
+    verify(notificationSender).send(any());
     verify(polling).updateCheckedAt(2L, FRESH);
   }
 
@@ -132,7 +137,6 @@ class UpdateSchedulerTest {
   void poll_multipleBatches_paginatesUntilEmpty() {
     URI u1 = URI.create("https://github.com/a/b");
     URI u2 = URI.create("https://github.com/c/d");
-    // batchSize=2: первый батч полон (2) → делаем второй запрос; второй пуст → стоп.
     AppProperties.Scheduler sched = mock(AppProperties.Scheduler.class);
     when(sched.batchSize()).thenReturn(2);
     when(properties.scheduler()).thenReturn(sched);
@@ -142,11 +146,12 @@ class UpdateSchedulerTest {
     when(router.route(any())).thenReturn(checker);
     when(checker.fetchLastActivity(any())).thenReturn(FRESH);
     when(checker.fetchDetails(any())).thenReturn(new UpdateDetails("t", "a", FRESH, "p"));
-    when(repository.findSubscribers(any())).thenReturn(Set.of(10L));
+    when(repository.findSubscribersWithMode(any()))
+        .thenReturn(List.of(new SubscriptionRepository.SubscriberMode(10L, "INSTANT")));
 
     scheduler.poll();
 
     verify(polling, times(2)).findBatch(any(Cursor.class), any(Instant.class), eq(2));
-    verify(botClient, times(2)).sendUpdate(any());
+    verify(notificationSender, times(2)).send(any());
   }
 }

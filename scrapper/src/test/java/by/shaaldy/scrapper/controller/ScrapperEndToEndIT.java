@@ -21,7 +21,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import by.shaaldy.scrapper.dto.scrapper.*;
 
 @Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = "app.message-transport=HTTP")
 class ScrapperEndToEndIT {
 
   @ServiceConnection
@@ -176,5 +178,109 @@ class ScrapperEndToEndIT {
     AddLinkRequest body = new AddLinkRequest().link(url).tags(tags).filters(List.of());
     rest.exchange(
         "/links", HttpMethod.POST, new HttpEntity<>(body, chatHeader(chat)), LinkResponse.class);
+  }
+
+  @Test
+  void updateNotificationMode_toDigest_persistsHourAndAffectsRecipients() {
+    long chat = 9200L;
+    rest.postForEntity("/tg-chat/{id}", null, Void.class, chat);
+
+    NotificationModeRequest body =
+        new NotificationModeRequest().mode(NotificationModeRequest.ModeEnum.DIGEST).digestHour(10);
+    ResponseEntity<Void> update =
+        rest.exchange(
+            "/tg-chat/{id}/notification-mode",
+            HttpMethod.PUT,
+            new HttpEntity<>(body),
+            Void.class,
+            chat);
+
+    assertThat(update.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+    // проверяем эффект: чат должен появиться среди получателей дайджеста на час 10
+    ResponseEntity<Long[]> recipients =
+        rest.getForEntity("/notifications/digest-recipients?hour=10", Long[].class);
+    assertThat(recipients.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(recipients.getBody()).contains(chat);
+
+    // и не должен появляться на другой час
+    ResponseEntity<Long[]> otherHour =
+        rest.getForEntity("/notifications/digest-recipients?hour=11", Long[].class);
+    assertThat(otherHour.getBody()).doesNotContain(chat);
+  }
+
+  @Test
+  void updateNotificationMode_backToInstant_removesFromDigestRecipients() {
+    long chat = 9201L;
+    rest.postForEntity("/tg-chat/{id}", null, Void.class, chat);
+
+    NotificationModeRequest toDigest =
+        new NotificationModeRequest().mode(NotificationModeRequest.ModeEnum.DIGEST).digestHour(14);
+    rest.exchange(
+        "/tg-chat/{id}/notification-mode",
+        HttpMethod.PUT,
+        new HttpEntity<>(toDigest),
+        Void.class,
+        chat);
+
+    NotificationModeRequest toInstant =
+        new NotificationModeRequest().mode(NotificationModeRequest.ModeEnum.INSTANT);
+    ResponseEntity<Void> update =
+        rest.exchange(
+            "/tg-chat/{id}/notification-mode",
+            HttpMethod.PUT,
+            new HttpEntity<>(toInstant),
+            Void.class,
+            chat);
+
+    assertThat(update.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+    ResponseEntity<Long[]> recipients =
+        rest.getForEntity("/notifications/digest-recipients?hour=14", Long[].class);
+    assertThat(recipients.getBody()).doesNotContain(chat);
+  }
+
+  @Test
+  void updateNotificationMode_unregisteredChat_returnsNotFound() {
+    NotificationModeRequest body =
+        new NotificationModeRequest().mode(NotificationModeRequest.ModeEnum.DIGEST).digestHour(9);
+
+    ResponseEntity<ApiErrorResponse> resp =
+        rest.exchange(
+            "/tg-chat/{id}/notification-mode",
+            HttpMethod.PUT,
+            new HttpEntity<>(body),
+            ApiErrorResponse.class,
+            9299L);
+
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void digestRecipients_multipleChatsAtSameHour_returnsAll() {
+    long chatA = 9210L;
+    long chatB = 9211L;
+    rest.postForEntity("/tg-chat/{id}", null, Void.class, chatA);
+    rest.postForEntity("/tg-chat/{id}", null, Void.class, chatB);
+
+    NotificationModeRequest digestAt15 =
+        new NotificationModeRequest().mode(NotificationModeRequest.ModeEnum.DIGEST).digestHour(15);
+    rest.exchange(
+        "/tg-chat/{id}/notification-mode",
+        HttpMethod.PUT,
+        new HttpEntity<>(digestAt15),
+        Void.class,
+        chatA);
+    rest.exchange(
+        "/tg-chat/{id}/notification-mode",
+        HttpMethod.PUT,
+        new HttpEntity<>(digestAt15),
+        Void.class,
+        chatB);
+
+    ResponseEntity<Long[]> recipients =
+        rest.getForEntity("/notifications/digest-recipients?hour=15", Long[].class);
+
+    assertThat(recipients.getBody()).contains(chatA, chatB);
   }
 }
