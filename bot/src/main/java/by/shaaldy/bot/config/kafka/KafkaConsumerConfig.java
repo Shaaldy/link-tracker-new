@@ -3,7 +3,6 @@ package by.shaaldy.bot.config.kafka;
 import java.util.HashMap;
 import java.util.Map;
 
-import by.shaaldy.bot.config.AppProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
@@ -25,6 +24,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.util.backoff.FixedBackOff;
 
+import by.shaaldy.bot.config.AppProperties;
 import by.shaaldy.bot.dto.bot.LinkUpdate;
 
 @Configuration

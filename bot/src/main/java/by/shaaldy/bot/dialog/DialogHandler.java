@@ -7,11 +7,11 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
-import by.shaaldy.bot.exception.ScrapperApiException;
 import by.shaaldy.bot.dto.scrapper.AddLinkRequest;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
 import by.shaaldy.bot.dto.scrapper.TagRequest;
+import by.shaaldy.bot.exception.ScrapperApiException;
 import by.shaaldy.bot.service.cache.LinkQueryService;
 import by.shaaldy.bot.service.digest.NotificationMode;
 import by.shaaldy.bot.service.digest.NotificationModeService;

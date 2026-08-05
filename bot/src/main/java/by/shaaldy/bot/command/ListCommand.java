@@ -5,8 +5,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
-import by.shaaldy.bot.exception.ScrapperApiException;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
+import by.shaaldy.bot.exception.ScrapperApiException;
 import by.shaaldy.bot.service.cache.LinkQueryService;
 import lombok.RequiredArgsConstructor;
 

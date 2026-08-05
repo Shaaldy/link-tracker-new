@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.client.bot.BotClient;
 import by.shaaldy.scrapper.dto.bot.LinkUpdate;
+import io.github.resilience4j.retry.RetryRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class HttpNotificationSenderTest {
@@ -17,7 +18,8 @@ class HttpNotificationSenderTest {
 
   @Test
   void send_delegatesToBotClient() {
-    HttpNotificationSender sender = new HttpNotificationSender(botClient);
+    RetryRegistry retryRegistry = RetryRegistry.ofDefaults();
+    HttpNotificationSender sender = new HttpNotificationSender(botClient, retryRegistry);
     LinkUpdate update = new LinkUpdate().id(1L);
 
     sender.send(update);

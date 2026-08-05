@@ -7,12 +7,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.util.TextPreview;
+import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -46,17 +46,25 @@ public class GitHubClient implements UpdateChecker {
     GitHubRepoResponse repository = getRepository(owner, repo);
     candidates.add(repoCandidate(repository));
 
-    getPulls(owner, repo).stream().findFirst().map(GitHubClient::itemCandidate).ifPresent(candidates::add);
-    getIssues(owner, repo).stream().findFirst().map(GitHubClient::itemCandidate).ifPresent(candidates::add);
+    getPulls(owner, repo).stream()
+        .findFirst()
+        .map(GitHubClient::itemCandidate)
+        .ifPresent(candidates::add);
+    getIssues(owner, repo).stream()
+        .findFirst()
+        .map(GitHubClient::itemCandidate)
+        .ifPresent(candidates::add);
 
     return candidates.stream()
-            .max(Comparator.comparing(Candidate::at))
-            .map(Candidate::details)
-            .orElseGet(() -> new UpdateDetails(null, null, null, null));
+        .max(Comparator.comparing(Candidate::at))
+        .map(Candidate::details)
+        .orElseGet(() -> new UpdateDetails(null, null, null, null));
   }
 
   private GitHubRepoResponse getRepository(String owner, String repo) {
-    return retryRegistry.retry("github-getRepository").executeSupplier(() -> api.getRepository(owner, repo));
+    return retryRegistry
+        .retry("github-getRepository")
+        .executeSupplier(() -> api.getRepository(owner, repo));
   }
 
   private List<GitHubItemResponse> getPulls(String owner, String repo) {
@@ -64,21 +72,23 @@ public class GitHubClient implements UpdateChecker {
   }
 
   private List<GitHubItemResponse> getIssues(String owner, String repo) {
-    return retryRegistry.retry("github-getIssues").executeSupplier(() -> api.getIssues(owner, repo));
+    return retryRegistry
+        .retry("github-getIssues")
+        .executeSupplier(() -> api.getIssues(owner, repo));
   }
 
   private static Candidate itemCandidate(GitHubItemResponse item) {
     String author = item.user() == null ? null : item.user().login();
     UpdateDetails details =
-            new UpdateDetails(item.title(), author, item.createdAt(), TextPreview.preview(item.body()));
+        new UpdateDetails(item.title(), author, item.createdAt(), TextPreview.preview(item.body()));
     return new Candidate(item.updatedAt(), details);
   }
 
   private static Candidate repoCandidate(GitHubRepoResponse repo) {
     String author = repo.owner() == null ? null : repo.owner().login();
     UpdateDetails details =
-            new UpdateDetails(
-                    repo.fullName(), author, repo.pushedAt(), TextPreview.preview(repo.description()));
+        new UpdateDetails(
+            repo.fullName(), author, repo.pushedAt(), TextPreview.preview(repo.description()));
     return new Candidate(repo.pushedAt(), details);
   }
 

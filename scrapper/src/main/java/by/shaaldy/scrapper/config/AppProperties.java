@@ -3,12 +3,12 @@ package by.shaaldy.scrapper.config;
 import java.time.Duration;
 import java.util.List;
 
-import jakarta.validation.constraints.NotEmpty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
@@ -49,8 +49,9 @@ public record AppProperties(
   public record HttpClient(@Valid @NotNull Timeout timeout) {
     public record Timeout(@NotNull Duration connect, @NotNull Duration read) {}
   }
+
   public record Retry(
-          @Positive int maxAttempts,
-          @NotNull Duration waitDuration,
-          @NotEmpty List<Integer> retryableStatusCodes) {}
+      @Positive int maxAttempts,
+      @NotNull Duration waitDuration,
+      @NotEmpty List<Integer> retryableStatusCodes) {}
 }

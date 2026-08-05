@@ -8,7 +8,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import java.io.IOException;
 
-import by.shaaldy.bot.exception.ScrapperApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -23,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import by.shaaldy.bot.dto.scrapper.ApiErrorResponse;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
+import by.shaaldy.bot.exception.ScrapperApiException;
 
 class ScrapperClientErrorHandlingTest {
 

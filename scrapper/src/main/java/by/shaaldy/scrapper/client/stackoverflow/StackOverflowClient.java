@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -16,6 +15,7 @@ import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.util.TextPreview;
+import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -73,20 +73,20 @@ public class StackOverflowClient implements UpdateChecker {
 
   private StackOverflowResponse getQuestion(long id, String key) {
     return retryRegistry
-            .retry("stackoverflow-getQuestion")
-            .executeSupplier(() -> api.getQuestion(id, "stackoverflow", key));
+        .retry("stackoverflow-getQuestion")
+        .executeSupplier(() -> api.getQuestion(id, "stackoverflow", key));
   }
 
   private StackOverflowResponse getAnswers(long id, String key) {
     return retryRegistry
-            .retry("stackoverflow-getAnswers")
-            .executeSupplier(() -> api.getAnswers(id, "stackoverflow", key));
+        .retry("stackoverflow-getAnswers")
+        .executeSupplier(() -> api.getAnswers(id, "stackoverflow", key));
   }
 
   private StackOverflowResponse getComments(long id, String key) {
     return retryRegistry
-            .retry("stackoverflow-getComments")
-            .executeSupplier(() -> api.getComments(id, "stackoverflow", key));
+        .retry("stackoverflow-getComments")
+        .executeSupplier(() -> api.getComments(id, "stackoverflow", key));
   }
 
   private static void addBodyCandidate(

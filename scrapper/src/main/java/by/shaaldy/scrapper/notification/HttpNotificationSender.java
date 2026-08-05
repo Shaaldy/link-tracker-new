@@ -1,11 +1,11 @@
 package by.shaaldy.scrapper.notification;
 
-import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.scrapper.client.bot.BotClient;
 import by.shaaldy.scrapper.dto.bot.LinkUpdate;
+import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 
 @Component
