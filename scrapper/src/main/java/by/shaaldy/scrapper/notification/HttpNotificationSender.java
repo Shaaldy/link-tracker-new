@@ -1,5 +1,6 @@
 package by.shaaldy.scrapper.notification;
 
+import io.github.resilience4j.retry.RetryRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -12,9 +13,10 @@ import lombok.RequiredArgsConstructor;
 @ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP", matchIfMissing = true)
 public class HttpNotificationSender implements NotificationSender {
   private final BotClient botClient;
+  private final RetryRegistry retryRegistry;
 
   @Override
   public void send(LinkUpdate update) {
-    botClient.sendUpdate(update);
+    retryRegistry.retry("bot-sendUpdate").executeRunnable(() -> botClient.sendUpdate(update));
   }
 }
