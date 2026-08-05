@@ -1,8 +1,9 @@
-package by.shaaldy.bot.config;
+package by.shaaldy.bot.config.kafka;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import by.shaaldy.bot.config.AppProperties;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;

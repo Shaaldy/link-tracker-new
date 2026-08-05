@@ -1,5 +1,6 @@
-package by.shaaldy.bot.config;
+package by.shaaldy.bot.config.telegram;
 
+import by.shaaldy.bot.config.AppProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

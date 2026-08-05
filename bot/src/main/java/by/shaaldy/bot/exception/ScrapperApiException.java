@@ -1,4 +1,4 @@
-package by.shaaldy.bot.client;
+package by.shaaldy.bot.exception;
 
 import org.springframework.http.HttpStatusCode;
 

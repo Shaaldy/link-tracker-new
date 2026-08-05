@@ -3,7 +3,7 @@ package by.shaaldy.bot.service.digest;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
-import by.shaaldy.bot.client.ScrapperApiException;
+import by.shaaldy.bot.exception.ScrapperApiException;
 import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.dto.scrapper.NotificationModeRequest;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,10 @@
 package by.shaaldy.bot.config;
 
 import java.time.Duration;
+import java.util.List;
 
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Positive;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -18,7 +21,8 @@ public record AppProperties(
     @Valid @NotNull Kafka kafka,
     @Valid @NotNull Cache cache,
     @Valid @NotNull Digest digest,
-    @Valid @NotNull HttpClient httpClient) {
+    @Valid @NotNull HttpClient httpClient,
+    @Valid @NotNull Retry retry) {
   public record Kafka(@Valid @NotNull Topics topics) {
 
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
@@ -36,4 +40,8 @@ public record AppProperties(
   public record HttpClient(@Valid @NotNull Timeout timeout) {
     public record Timeout(@NotNull Duration connect, @NotNull Duration read) {}
   }
+  public record Retry(
+          @Positive int maxAttempts,
+          @NotNull Duration waitDuration,
+          @NotEmpty List<Integer> retryableStatusCodes) {}
 }

@@ -1,4 +1,4 @@
-package by.shaaldy.bot.config;
+package by.shaaldy.bot.config.cache;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
