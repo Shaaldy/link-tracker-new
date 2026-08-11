@@ -56,7 +56,8 @@ class StackOverflowClientRetryTest {
     AppProperties.StackOverflow stackOverflowProps =
         new AppProperties.StackOverflow(wireMock.baseUrl(), null);
     AppProperties properties =
-        new AppProperties(null, stackOverflowProps, null, null, null, null, null, null, null, null);
+        new AppProperties(
+            null, stackOverflowProps, null, null, null, null, null, null, null, null, null);
 
     client =
         new StackOverflowClient(

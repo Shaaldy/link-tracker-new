@@ -9,6 +9,8 @@ import org.springframework.web.client.RestClientResponseException;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.ratelimiter.RateLimiterConfig;
+import io.github.resilience4j.ratelimiter.RateLimiterRegistry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 
@@ -38,6 +40,18 @@ public class ResilienceConfig {
             .waitDurationInOpenState(cb.waitDurationOpenState())
             .build();
     return CircuitBreakerRegistry.of(config);
+  }
+
+  @Bean
+  public RateLimiterRegistry rateLimiterRegistry(AppProperties properties) {
+    AppProperties.RateLimiter rl = properties.rateLimiter();
+    RateLimiterConfig config =
+        RateLimiterConfig.custom()
+            .limitForPeriod(rl.limitForPeriod())
+            .limitRefreshPeriod(rl.limitRefreshPeriod())
+            .timeoutDuration(rl.timeoutDuration())
+            .build();
+    return RateLimiterRegistry.of(config);
   }
 
   private static Predicate<Throwable> retryableStatusPredicate(AppProperties.Retry retry) {
