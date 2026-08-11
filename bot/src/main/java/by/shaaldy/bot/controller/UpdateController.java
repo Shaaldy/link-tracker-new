@@ -1,6 +1,5 @@
 package by.shaaldy.bot.controller;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP", matchIfMissing = true)
 public class UpdateController {
 
   private final UpdateProcessor processor;

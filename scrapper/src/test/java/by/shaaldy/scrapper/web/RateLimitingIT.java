@@ -1,12 +1,14 @@
 package by.shaaldy.scrapper.web;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+
+import by.shaaldy.scrapper.repository.AbstractPostgresIT;
 
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -15,7 +17,7 @@ import org.springframework.http.HttpStatus;
       "app.rate-limiter.limit-refresh-period=60s",
       "app.rate-limiter.timeout-duration=0s"
     })
-class RateLimitingIT {
+class RateLimitingIT extends AbstractPostgresIT {
 
   @LocalServerPort private int port;
 

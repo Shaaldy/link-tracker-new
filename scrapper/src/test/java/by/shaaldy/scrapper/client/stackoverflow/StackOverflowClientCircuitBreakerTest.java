@@ -60,7 +60,7 @@ class StackOverflowClientCircuitBreakerTest {
         new AppProperties.StackOverflow(wireMock.baseUrl(), null);
     properties =
         new AppProperties(
-            null, stackOverflowProps, null, null, null, null, null, null, null, null, null);
+            null, stackOverflowProps, null, null, null, null, null, null, null, null, null, null);
   }
 
   @AfterAll

@@ -1,6 +1,5 @@
 package by.shaaldy.bot.controller;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "KAFKA")
 public class KafkaUpdateListener {
 
   private final UpdateProcessor processor;
