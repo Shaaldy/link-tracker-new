@@ -1,6 +1,5 @@
 package by.shaaldy.scrapper.notification;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.scrapper.client.bot.BotClient;
@@ -11,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.message-transport", havingValue = "HTTP", matchIfMissing = true)
 public class HttpNotificationSender implements NotificationSender {
   private final BotClient botClient;
   private final RetryRegistry retryRegistry;
