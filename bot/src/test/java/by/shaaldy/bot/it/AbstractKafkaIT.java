@@ -18,7 +18,7 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class AbstractKafkaIT {
 
   static final KafkaContainer KAFKA =
-      new KafkaContainer(DockerImageName.parse("apache/kafka-native:latest"));
+      new KafkaContainer(DockerImageName.parse("apache/kafka:3.8.0"));
 
   static {
     KAFKA.start();
