@@ -25,7 +25,8 @@ public record AppProperties(
     @Valid @NotNull HttpClient httpClient,
     @Valid @NotNull Retry retry,
     @Valid @NotNull CircuitBreaker circuitBreaker,
-    @Valid @NotNull RateLimiter rateLimiter) {
+    @Valid @NotNull RateLimiter rateLimiter,
+    @Valid @NotNull Notification notification) {
 
   public record GitHub(@NotBlank String baseUrl, String token) {}
 
@@ -68,4 +69,6 @@ public record AppProperties(
       @Positive int limitForPeriod,
       @NotNull Duration limitRefreshPeriod,
       @NotNull Duration timeoutDuration) {}
+
+  public record Notification(@NotNull Duration kafkaSendTimeout) {}
 }
