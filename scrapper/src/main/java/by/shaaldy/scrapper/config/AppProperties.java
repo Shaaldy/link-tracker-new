@@ -23,7 +23,8 @@ public record AppProperties(
     @NotNull MessageTransport messageTransport,
     @Valid @NotNull Kafka kafka,
     @Valid @NotNull HttpClient httpClient,
-    @Valid @NotNull Retry retry) {
+    @Valid @NotNull Retry retry,
+    @Valid @NotNull CircuitBreaker circuitBreaker) {
 
   public record GitHub(@NotBlank String baseUrl, String token) {}
 
@@ -54,4 +55,11 @@ public record AppProperties(
       @Positive int maxAttempts,
       @NotNull Duration waitDuration,
       @NotEmpty List<Integer> retryableStatusCodes) {}
+
+  public record CircuitBreaker(
+      @Positive int slidingWindow,
+      @Positive int minimumNumberOfCalls,
+      @Positive float failureRateThreshold,
+      @Positive int permittedCallsInHalfOpenState,
+      @NotNull Duration waitDurationOpenState) {}
 }

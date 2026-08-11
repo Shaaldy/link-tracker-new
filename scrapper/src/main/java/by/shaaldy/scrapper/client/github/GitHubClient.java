@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.util.TextPreview;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,7 @@ public class GitHubClient implements UpdateChecker {
 
   private final GitHubApi api;
   private final RetryRegistry retryRegistry;
+  private final CircuitBreakerRegistry circuitBreakerRegistry;
 
   @Override
   public boolean supports(URI url) {
@@ -62,19 +64,21 @@ public class GitHubClient implements UpdateChecker {
   }
 
   private GitHubRepoResponse getRepository(String owner, String repo) {
-    return retryRegistry
-        .retry("github-getRepository")
-        .executeSupplier(() -> api.getRepository(owner, repo));
+    return decorate("github-getRepository", () -> api.getRepository(owner, repo));
   }
 
   private List<GitHubItemResponse> getPulls(String owner, String repo) {
-    return retryRegistry.retry("github-getPulls").executeSupplier(() -> api.getPulls(owner, repo));
+    return decorate("github-getPulls", () -> api.getPulls(owner, repo));
   }
 
   private List<GitHubItemResponse> getIssues(String owner, String repo) {
-    return retryRegistry
-        .retry("github-getIssues")
-        .executeSupplier(() -> api.getIssues(owner, repo));
+    return decorate("github-getIssues", () -> api.getIssues(owner, repo));
+  }
+
+  private <T> T decorate(String name, java.util.function.Supplier<T> call) {
+    return circuitBreakerRegistry
+        .circuitBreaker(name)
+        .executeSupplier(() -> retryRegistry.retry(name).executeSupplier(call));
   }
 
   private static Candidate itemCandidate(GitHubItemResponse item) {

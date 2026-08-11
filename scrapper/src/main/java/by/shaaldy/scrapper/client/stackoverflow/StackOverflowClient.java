@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,6 +16,7 @@ import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.util.TextPreview;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +29,7 @@ public class StackOverflowClient implements UpdateChecker {
   private final StackOverflowApi api;
   private final AppProperties properties;
   private final RetryRegistry retryRegistry;
+  private final CircuitBreakerRegistry circuitBreakerRegistry;
 
   @Override
   public boolean supports(URI url) {
@@ -72,21 +75,21 @@ public class StackOverflowClient implements UpdateChecker {
   }
 
   private StackOverflowResponse getQuestion(long id, String key) {
-    return retryRegistry
-        .retry("stackoverflow-getQuestion")
-        .executeSupplier(() -> api.getQuestion(id, "stackoverflow", key));
+    return decorate("stackoverflow-getQuestion", () -> api.getQuestion(id, "stackoverflow", key));
   }
 
   private StackOverflowResponse getAnswers(long id, String key) {
-    return retryRegistry
-        .retry("stackoverflow-getAnswers")
-        .executeSupplier(() -> api.getAnswers(id, "stackoverflow", key));
+    return decorate("stackoverflow-getAnswers", () -> api.getAnswers(id, "stackoverflow", key));
   }
 
   private StackOverflowResponse getComments(long id, String key) {
-    return retryRegistry
-        .retry("stackoverflow-getComments")
-        .executeSupplier(() -> api.getComments(id, "stackoverflow", key));
+    return decorate("stackoverflow-getComments", () -> api.getComments(id, "stackoverflow", key));
+  }
+
+  private <T> T decorate(String name, Supplier<T> call) {
+    return circuitBreakerRegistry
+        .circuitBreaker(name)
+        .executeSupplier(() -> retryRegistry.retry(name).executeSupplier(call));
   }
 
   private static void addBodyCandidate(
