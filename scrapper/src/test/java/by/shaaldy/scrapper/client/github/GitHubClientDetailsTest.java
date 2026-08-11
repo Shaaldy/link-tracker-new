@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.domain.UpdateDetails;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,7 +39,7 @@ class GitHubClientDetailsTest {
 
   @BeforeEach
   void setUp() {
-    client = new GitHubClient(api, RetryRegistry.ofDefaults());
+    client = new GitHubClient(api, RetryRegistry.ofDefaults(), CircuitBreakerRegistry.ofDefaults());
   }
 
   @Test

@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 
 import by.shaaldy.scrapper.config.AppProperties;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 
@@ -55,9 +56,11 @@ class StackOverflowClientRetryTest {
     AppProperties.StackOverflow stackOverflowProps =
         new AppProperties.StackOverflow(wireMock.baseUrl(), null);
     AppProperties properties =
-        new AppProperties(null, stackOverflowProps, null, null, null, null, null, null, null);
+        new AppProperties(null, stackOverflowProps, null, null, null, null, null, null, null, null);
 
-    client = new StackOverflowClient(api, properties, retryRegistry);
+    client =
+        new StackOverflowClient(
+            api, properties, retryRegistry, CircuitBreakerRegistry.ofDefaults());
   }
 
   @AfterAll

@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryConfig;
 import io.github.resilience4j.retry.RetryRegistry;
 
@@ -51,7 +52,7 @@ class GitHubClientRetryTest {
             .build();
     RetryRegistry retryRegistry = RetryRegistry.of(retryConfig);
 
-    client = new GitHubClient(api, retryRegistry);
+    client = new GitHubClient(api, retryRegistry, CircuitBreakerRegistry.ofDefaults());
   }
 
   @AfterAll

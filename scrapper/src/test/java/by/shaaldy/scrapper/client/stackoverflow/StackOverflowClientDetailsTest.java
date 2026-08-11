@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.config.AppProperties;
 import by.shaaldy.scrapper.domain.UpdateDetails;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.retry.RetryRegistry;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +35,9 @@ class StackOverflowClientDetailsTest {
     AppProperties.StackOverflow so = org.mockito.Mockito.mock(AppProperties.StackOverflow.class);
     lenient().when(so.key()).thenReturn(null);
     lenient().when(properties.stackoverflow()).thenReturn(so);
-    client = new StackOverflowClient(api, properties, RetryRegistry.ofDefaults());
+    client =
+        new StackOverflowClient(
+            api, properties, RetryRegistry.ofDefaults(), CircuitBreakerRegistry.ofDefaults());
   }
 
   private StackOverflowResponse question(long lastActivity) {
