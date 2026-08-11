@@ -22,7 +22,8 @@ public record AppProperties(
     @Valid @NotNull Cache cache,
     @Valid @NotNull Digest digest,
     @Valid @NotNull HttpClient httpClient,
-    @Valid @NotNull Retry retry) {
+    @Valid @NotNull Retry retry,
+    @Valid @NotNull CircuitBreaker circuitBreaker) {
   public record Kafka(@Valid @NotNull Topics topics) {
 
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
@@ -45,4 +46,11 @@ public record AppProperties(
       @Positive int maxAttempts,
       @NotNull Duration waitDuration,
       @NotEmpty List<Integer> retryableStatusCodes) {}
+
+  public record CircuitBreaker(
+      @Positive int slidingWindow,
+      @Positive int minimumNumberOfCalls,
+      @Positive float failureRateThreshold,
+      @Positive int permittedCallsInHalfOpenState,
+      @NotNull Duration waitDurationOpenState) {}
 }
