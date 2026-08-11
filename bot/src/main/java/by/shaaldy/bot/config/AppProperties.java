@@ -23,7 +23,8 @@ public record AppProperties(
     @Valid @NotNull Digest digest,
     @Valid @NotNull HttpClient httpClient,
     @Valid @NotNull Retry retry,
-    @Valid @NotNull CircuitBreaker circuitBreaker) {
+    @Valid @NotNull CircuitBreaker circuitBreaker,
+    @Valid @NotNull RateLimiter rateLimiter) {
   public record Kafka(@Valid @NotNull Topics topics) {
 
     public record Topics(@NotBlank String updates, @NotBlank String updatesDlq) {}
@@ -53,4 +54,9 @@ public record AppProperties(
       @Positive float failureRateThreshold,
       @Positive int permittedCallsInHalfOpenState,
       @NotNull Duration waitDurationOpenState) {}
+
+  public record RateLimiter(
+      @Positive int limitForPeriod,
+      @NotNull Duration limitRefreshPeriod,
+      @NotNull Duration timeoutDuration) {}
 }
