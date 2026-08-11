@@ -1,65 +1,78 @@
 package by.shaaldy.scrapper.notification;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import by.shaaldy.scrapper.config.AppProperties;
+import by.shaaldy.scrapper.dto.bot.LinkUpdate;
+
+@ExtendWith(MockitoExtension.class)
 class TransportSelectionTest {
 
-  private final ApplicationContextRunner runner =
-      new ApplicationContextRunner().withUserConfiguration(TransportConfig.class);
+  @Mock private HttpNotificationSender httpSender;
+  @Mock private KafkaNotificationSender kafkaSender;
+
+  private static final LinkUpdate UPDATE = new LinkUpdate().id(1L);
 
   @Test
-  void httpByDefault_selectsHttpSender() {
-    runner.run(
-        ctx ->
-            assertThat(ctx)
-                .getBean(NotificationSender.class)
-                .isInstanceOf(HttpNotificationSender.class));
+  void httpTransport_primarySucceeds_kafkaNeverCalled() {
+    AppProperties properties = propertiesWithTransport(AppProperties.MessageTransport.HTTP);
+    FallbackNotificationSender sender =
+        new FallbackNotificationSender(httpSender, kafkaSender, properties);
+
+    sender.send(UPDATE);
+
+    verify(httpSender).send(UPDATE);
+    verifyNoInteractions(kafkaSender);
   }
 
   @Test
-  void httpExplicit_selectsHttpSender() {
-    runner
-        .withPropertyValues("app.message-transport=HTTP")
-        .run(
-            ctx ->
-                assertThat(ctx)
-                    .getBean(NotificationSender.class)
-                    .isInstanceOf(HttpNotificationSender.class));
+  void httpTransport_primaryFails_fallsBackToKafka() {
+    AppProperties properties = propertiesWithTransport(AppProperties.MessageTransport.HTTP);
+    FallbackNotificationSender sender =
+        new FallbackNotificationSender(httpSender, kafkaSender, properties);
+    doThrow(new RuntimeException("http down")).when(httpSender).send(UPDATE);
+
+    assertThatCode(() -> sender.send(UPDATE)).doesNotThrowAnyException();
+
+    verify(httpSender).send(UPDATE);
+    verify(kafkaSender).send(UPDATE);
   }
 
   @Test
-  void kafka_selectsKafkaSender() {
-    runner
-        .withPropertyValues("app.message-transport=KAFKA")
-        .run(
-            ctx ->
-                assertThat(ctx)
-                    .getBean(NotificationSender.class)
-                    .isInstanceOf(KafkaNotificationSender.class));
+  void kafkaTransport_primarySucceeds_httpNeverCalled() {
+    AppProperties properties = propertiesWithTransport(AppProperties.MessageTransport.KAFKA);
+    FallbackNotificationSender sender =
+        new FallbackNotificationSender(httpSender, kafkaSender, properties);
+
+    sender.send(UPDATE);
+
+    verify(kafkaSender).send(UPDATE);
+    verifyNoInteractions(httpSender);
   }
 
-  @Configuration
-  static class TransportConfig {
-    @Bean
-    @ConditionalOnProperty(
-        name = "app.message-transport",
-        havingValue = "HTTP",
-        matchIfMissing = true)
-    NotificationSender httpSender() {
-      return new HttpNotificationSender(
-          null, null, null); // делегата не вызываем — проверяем только тип
-    }
+  @Test
+  void kafkaTransport_primaryFails_fallsBackToHttp() {
+    AppProperties properties = propertiesWithTransport(AppProperties.MessageTransport.KAFKA);
+    FallbackNotificationSender sender =
+        new FallbackNotificationSender(httpSender, kafkaSender, properties);
+    doThrow(new RuntimeException("kafka down")).when(kafkaSender).send(UPDATE);
 
-    @Bean
-    @ConditionalOnProperty(name = "app.message-transport", havingValue = "KAFKA")
-    NotificationSender kafkaSender() {
-      return new KafkaNotificationSender(null, null);
-    }
+    assertThatCode(() -> sender.send(UPDATE)).doesNotThrowAnyException();
+
+    verify(kafkaSender).send(UPDATE);
+    verify(httpSender).send(UPDATE);
+  }
+
+  private static AppProperties propertiesWithTransport(AppProperties.MessageTransport transport) {
+    return new AppProperties(
+        null, null, null, null, null, transport, null, null, null, null, null, null);
   }
 }

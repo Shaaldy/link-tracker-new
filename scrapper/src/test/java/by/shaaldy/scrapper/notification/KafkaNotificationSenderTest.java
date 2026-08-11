@@ -2,6 +2,9 @@ package by.shaaldy.scrapper.notification;
 
 import static org.mockito.Mockito.*;
 
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -22,8 +25,15 @@ class KafkaNotificationSenderTest {
     AppProperties.Kafka kafka = mock_kafka();
     when(properties.kafka()).thenReturn(kafka);
 
+    AppProperties.Notification notification = mock(AppProperties.Notification.class);
+    when(notification.kafkaSendTimeout()).thenReturn(Duration.ofSeconds(5));
+    when(properties.notification()).thenReturn(notification);
+
     KafkaNotificationSender sender = new KafkaNotificationSender(kafkaTemplate, properties);
     LinkUpdate update = new LinkUpdate().id(42L);
+
+    when(kafkaTemplate.send("link-updates", "42", update))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     sender.send(update);
 
