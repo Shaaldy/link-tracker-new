@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import by.shaaldy.scrapper.client.UpdateChecker;
 import by.shaaldy.scrapper.domain.UpdateDetails;
 import by.shaaldy.scrapper.util.TextPreview;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 
 @Component
@@ -21,6 +23,8 @@ public class GitHubClient implements UpdateChecker {
   private static final Pattern PATH = Pattern.compile("^/[^/]+/[^/]+(/.*)?$");
 
   private final GitHubApi api;
+  private final RetryRegistry retryRegistry;
+  private final CircuitBreakerRegistry circuitBreakerRegistry;
 
   @Override
   public boolean supports(URI url) {
@@ -30,7 +34,7 @@ public class GitHubClient implements UpdateChecker {
   @Override
   public Instant fetchLastActivity(URI url) {
     String[] parts = url.getPath().split("/"); // ["", owner, repo, ...]
-    return api.getRepository(parts[1], parts[2]).pushedAt();
+    return getRepository(parts[1], parts[2]).pushedAt();
   }
 
   @Override
@@ -39,18 +43,16 @@ public class GitHubClient implements UpdateChecker {
     String owner = parts[1];
     String repo = parts[2];
 
-    // Три кандидата: последний PR, последний Issue, репо-событие (общий случай — пуш в код и т.п.).
-    // Выбираем самое свежее по времени. Репо-кандидат есть всегда; PR/Issue могут отсутствовать.
     List<Candidate> candidates = new ArrayList<>();
 
-    GitHubRepoResponse repository = api.getRepository(owner, repo);
+    GitHubRepoResponse repository = getRepository(owner, repo);
     candidates.add(repoCandidate(repository));
 
-    api.getPulls(owner, repo).stream()
+    getPulls(owner, repo).stream()
         .findFirst()
         .map(GitHubClient::itemCandidate)
         .ifPresent(candidates::add);
-    api.getIssues(owner, repo).stream()
+    getIssues(owner, repo).stream()
         .findFirst()
         .map(GitHubClient::itemCandidate)
         .ifPresent(candidates::add);
@@ -59,6 +61,24 @@ public class GitHubClient implements UpdateChecker {
         .max(Comparator.comparing(Candidate::at))
         .map(Candidate::details)
         .orElseGet(() -> new UpdateDetails(null, null, null, null));
+  }
+
+  private GitHubRepoResponse getRepository(String owner, String repo) {
+    return decorate("github-getRepository", () -> api.getRepository(owner, repo));
+  }
+
+  private List<GitHubItemResponse> getPulls(String owner, String repo) {
+    return decorate("github-getPulls", () -> api.getPulls(owner, repo));
+  }
+
+  private List<GitHubItemResponse> getIssues(String owner, String repo) {
+    return decorate("github-getIssues", () -> api.getIssues(owner, repo));
+  }
+
+  private <T> T decorate(String name, java.util.function.Supplier<T> call) {
+    return circuitBreakerRegistry
+        .circuitBreaker(name)
+        .executeSupplier(() -> retryRegistry.retry(name).executeSupplier(call));
   }
 
   private static Candidate itemCandidate(GitHubItemResponse item) {
@@ -76,6 +96,5 @@ public class GitHubClient implements UpdateChecker {
     return new Candidate(repo.pushedAt(), details);
   }
 
-  /** Кандидат детализации с временем события — для выбора самого свежего. */
   private record Candidate(Instant at, UpdateDetails details) {}
 }

@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class GitHubClientSupportsTest {
 
   private final GitHubClient client =
-      new GitHubClient(null); // GitHubApi в supports() не используется
+      new GitHubClient(null, null, null); // GitHubApi в supports() не используется
 
   @ParameterizedTest
   @ValueSource(

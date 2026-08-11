@@ -7,12 +7,12 @@ import java.util.stream.IntStream;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
-import by.shaaldy.bot.client.ScrapperApiException;
 import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.dialog.DialogContext;
 import by.shaaldy.bot.dialog.DialogState;
 import by.shaaldy.bot.dialog.DialogStateHolder;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
+import by.shaaldy.bot.exception.ScrapperApiException;
 import lombok.RequiredArgsConstructor;
 
 @Component

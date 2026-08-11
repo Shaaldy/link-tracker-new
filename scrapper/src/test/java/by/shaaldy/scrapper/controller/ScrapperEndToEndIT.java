@@ -23,7 +23,7 @@ import by.shaaldy.scrapper.dto.scrapper.*;
 @Testcontainers
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "app.message-transport=HTTP")
+    properties = {"app.rate-limiter.limit-for-period=1000", "app.message-transport=HTTP"})
 class ScrapperEndToEndIT {
 
   @ServiceConnection

@@ -7,19 +7,21 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import by.shaaldy.scrapper.domain.UpdateDetails;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.retry.RetryRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class GitHubClientDetailsTest {
 
   @Mock GitHubApi api;
-  @InjectMocks GitHubClient client;
+  GitHubClient client;
 
   private static final URI URL = URI.create("https://github.com/owner/repo");
   private static final Instant OLD = Instant.parse("2026-01-01T00:00:00Z");
@@ -33,6 +35,11 @@ class GitHubClientDetailsTest {
   private GitHubRepoResponse repo(Instant pushed) {
     return new GitHubRepoResponse(
         pushed, pushed, "owner/repo", new GitHubRepoResponse.Owner("owner"), "repo desc");
+  }
+
+  @BeforeEach
+  void setUp() {
+    client = new GitHubClient(api, RetryRegistry.ofDefaults(), CircuitBreakerRegistry.ofDefaults());
   }
 
   @Test

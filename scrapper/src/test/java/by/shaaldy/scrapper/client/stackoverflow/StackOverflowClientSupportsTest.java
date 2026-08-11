@@ -10,7 +10,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 class StackOverflowClientSupportsTest {
 
   private final StackOverflowClient client =
-      new StackOverflowClient(null, null); // Api и Properties в supports() не используются
+      new StackOverflowClient(
+          null, null, null, null); // Api и Properties в supports() не используются
 
   @ParameterizedTest
   @ValueSource(

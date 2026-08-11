@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import by.shaaldy.bot.dto.scrapper.ApiErrorResponse;
 import by.shaaldy.bot.dto.scrapper.ListLinksResponse;
+import by.shaaldy.bot.exception.ScrapperApiException;
 
 class ScrapperClientErrorHandlingTest {
 

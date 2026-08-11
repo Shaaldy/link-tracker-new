@@ -1,4 +1,4 @@
-package by.shaaldy.bot.client;
+package by.shaaldy.bot.config.scrapper;
 
 import java.io.IOException;
 
@@ -11,17 +11,25 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import by.shaaldy.bot.client.HttpClientFactorySupport;
+import by.shaaldy.bot.client.ScrapperClient;
 import by.shaaldy.bot.config.AppProperties;
 import by.shaaldy.bot.dto.scrapper.ApiErrorResponse;
+import by.shaaldy.bot.exception.ScrapperApiException;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
+@RequiredArgsConstructor
 public class ScrapperClientConfig {
 
+  private final AppProperties properties;
+
   @Bean
-  public ScrapperClient scrapperClient(AppProperties properties, ObjectMapper objectMapper) {
+  public ScrapperClient scrapperClientDelegate(ObjectMapper objectMapper) {
     RestClient restClient =
         RestClient.builder()
             .baseUrl(properties.scrapperBaseUrl())
+            .requestFactory(HttpClientFactorySupport.build(properties.httpClient().timeout()))
             .defaultStatusHandler(
                 HttpStatusCode::isError,
                 (request, response) -> {
