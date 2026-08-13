@@ -25,6 +25,8 @@ import by.shaaldy.scrapper.notification.NotificationSender;
 import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -37,6 +39,7 @@ public class UpdateScheduler {
   private final NotificationSender notificationSender;
   private final AppProperties properties;
   private final Semaphore semaphore; // ← без инициализатора здесь
+  private final MeterRegistry registry;
 
   @Autowired
   public UpdateScheduler(
@@ -44,7 +47,8 @@ public class UpdateScheduler {
       SubscriptionRepository subscriptionRepository,
       LinkSourceRouter router,
       NotificationSender notificationSender,
-      AppProperties properties) {
+      AppProperties properties,
+      MeterRegistry registry) {
     this.pollingRepository = pollingRepository;
     this.subscriptionRepository = subscriptionRepository;
     this.router = router;
@@ -52,6 +56,7 @@ public class UpdateScheduler {
     this.properties = properties;
     this.semaphore =
         new Semaphore(properties.scheduler().parallelism()); // ← здесь, properties уже есть
+    this.registry = registry;
   }
 
   @Scheduled(fixedDelayString = "${app.scheduler.interval}")
@@ -110,10 +115,7 @@ public class UpdateScheduler {
     }
   }
 
-  private void checkOne(Link link) {
-    URI url = link.getUrl();
-    UpdateChecker checker = router.route(url);
-
+  private void doCheckOne(Link link, URI url, UpdateChecker checker) {
     Instant latest = checker.fetchLastActivity(url);
     if (!latest.isAfter(link.getLastCheckedAt())) {
       return; // обновлений нет
@@ -145,8 +147,23 @@ public class UpdateScheduler {
           byMode.get(false).size(),
           byMode.get(true).size());
     }
-
     pollingRepository.updateCheckedAt(link.getId(), latest);
+  }
+
+  private void checkOne(Link link) {
+    URI url = link.getUrl();
+    UpdateChecker checker = router.route(url);
+
+    Timer.Sample sample = Timer.start(registry);
+    try {
+      doCheckOne(link, url, checker);
+    } finally {
+      sample.stop(
+          Timer.builder("scrapper.scrape.duration")
+              .tag("type", checker.type())
+              .publishPercentileHistogram()
+              .register(registry));
+    }
   }
 
   /** Форматирует детализацию в человекочитаемое сообщение для бота (требование ДЗ). */

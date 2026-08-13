@@ -9,12 +9,12 @@ import com.pengrad.telegrambot.model.Update;
 import by.shaaldy.bot.command.CommandDispatcher;
 import by.shaaldy.bot.dialog.DialogHandler;
 import by.shaaldy.bot.dialog.DialogStateHolder;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@RequiredArgsConstructor
 @Component
 public class UpdateListener {
   private final TelegramBot telegramBot;
@@ -22,6 +22,22 @@ public class UpdateListener {
   private final CommandDispatcher commandDispatcher;
   private final DialogStateHolder dialogStateHolder;
   private final DialogHandler dialogHandler;
+  private final Counter userMessagesCounter;
+
+  public UpdateListener(
+      TelegramBot telegramBot,
+      MessageSender messageSender,
+      CommandDispatcher commandDispatcher,
+      DialogStateHolder dialogStateHolder,
+      DialogHandler dialogHandler,
+      MeterRegistry registry) {
+    this.telegramBot = telegramBot;
+    this.messageSender = messageSender;
+    this.commandDispatcher = commandDispatcher;
+    this.dialogStateHolder = dialogStateHolder;
+    this.dialogHandler = dialogHandler;
+    this.userMessagesCounter = registry.counter("bot.user.messages");
+  }
 
   @PostConstruct
   public void start() {
@@ -33,13 +49,15 @@ public class UpdateListener {
     log.info("Telegram update listener started");
   }
 
-  private void handle(Update update) {
+  protected void handle(Update update) {
     if (update.message() == null || update.message().text() == null) {
       return;
     }
     long chatId = update.message().chat().id();
     String text = update.message().text();
     log.info("Received message from chat {}: {}", chatId, text);
+
+    userMessagesCounter.increment();
 
     String response =
         dialogStateHolder.isInDialog(chatId)
