@@ -89,7 +89,7 @@ class NotificationFallbackE2ETest {
     AppProperties.Kafka kafka = new AppProperties.Kafka(topics);
     AppProperties.Notification notification = new AppProperties.Notification(Duration.ofSeconds(1));
     return new AppProperties(
-        null, null, null, null, null, transport, kafka, null, null, null, null, notification);
+        null, null, null, null, null, transport, kafka, null, null, null, null, notification, null);
   }
 
   @Test

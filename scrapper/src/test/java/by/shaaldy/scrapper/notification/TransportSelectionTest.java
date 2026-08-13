@@ -73,6 +73,6 @@ class TransportSelectionTest {
 
   private static AppProperties propertiesWithTransport(AppProperties.MessageTransport transport) {
     return new AppProperties(
-        null, null, null, null, null, transport, null, null, null, null, null, null);
+        null, null, null, null, null, transport, null, null, null, null, null, null, null);
   }
 }

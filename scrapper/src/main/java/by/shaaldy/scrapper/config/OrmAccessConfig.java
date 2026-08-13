@@ -4,6 +4,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import by.shaaldy.scrapper.client.LinkSourceRouter;
+import by.shaaldy.scrapper.repository.orm.OrmLinkMetricsRepository;
 import by.shaaldy.scrapper.repository.orm.OrmLinkPollingRepository;
 import by.shaaldy.scrapper.repository.orm.OrmSubscriptionRepository;
 import by.shaaldy.scrapper.repository.orm.jpa.ChatJpaRepository;
@@ -30,5 +32,11 @@ class OrmAccessConfig {
   @Bean
   OrmLinkPollingRepository ormLinkPollingRepository(LinkJpaRepository links) {
     return new OrmLinkPollingRepository(links);
+  }
+
+  @Bean
+  OrmLinkMetricsRepository ormLinkMetricsRepository(
+      LinkJpaRepository links, LinkSourceRouter router) {
+    return new OrmLinkMetricsRepository(links, router);
   }
 }

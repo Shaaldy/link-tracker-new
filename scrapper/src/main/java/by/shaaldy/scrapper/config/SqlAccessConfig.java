@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import by.shaaldy.scrapper.client.LinkSourceRouter;
+import by.shaaldy.scrapper.repository.sql.SqlLinkMetricsRepository;
 import by.shaaldy.scrapper.repository.sql.SqlLinkPollingRepository;
 import by.shaaldy.scrapper.repository.sql.SqlSubscriptionRepository;
 
@@ -32,5 +34,11 @@ class SqlAccessConfig {
   @Bean
   SqlLinkPollingRepository sqlLinkPollingRepository(NamedParameterJdbcTemplate jdbc) {
     return new SqlLinkPollingRepository(jdbc);
+  }
+
+  @Bean
+  SqlLinkMetricsRepository sqlLinkMetricsRepository(
+      NamedParameterJdbcTemplate jdbc, LinkSourceRouter router) {
+    return new SqlLinkMetricsRepository(jdbc, router);
   }
 }
