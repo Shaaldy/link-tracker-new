@@ -27,6 +27,8 @@ import by.shaaldy.scrapper.notification.NotificationSender;
 import by.shaaldy.scrapper.repository.LinkPollingRepository;
 import by.shaaldy.scrapper.repository.LinkPollingRepository.Cursor;
 import by.shaaldy.scrapper.repository.SubscriptionRepository;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
 class UpdateSchedulerTest {
@@ -38,6 +40,7 @@ class UpdateSchedulerTest {
   @Mock UpdateChecker checker;
   @Mock AppProperties properties;
 
+  SimpleMeterRegistry registry;
   UpdateScheduler scheduler;
 
   private static final Instant FRESH = Instant.parse("2026-07-01T00:00:00Z");
@@ -53,7 +56,9 @@ class UpdateSchedulerTest {
     lenient().when(sched.batchSize()).thenReturn(100);
     lenient().when(sched.parallelism()).thenReturn(4);
     lenient().when(properties.scheduler()).thenReturn(sched);
-    scheduler = new UpdateScheduler(polling, repository, router, notificationSender, properties);
+    registry = new SimpleMeterRegistry();
+    scheduler =
+        new UpdateScheduler(polling, repository, router, notificationSender, properties, registry);
   }
 
   /** Первый findBatch отдаёт батч, второй — пусто (иначе бесконечный цикл). */
@@ -153,5 +158,66 @@ class UpdateSchedulerTest {
 
     verify(polling, times(2)).findBatch(any(Cursor.class), any(Instant.class), eq(2));
     verify(notificationSender, times(2)).send(any());
+  }
+
+  @Test
+  void recordsScrapeDurationTimerWithTypeTag() {
+    URI url = URI.create("https://github.com/octocat/Hello-World");
+    Link link = link(1L, url, SEEN);
+
+    lenient().when(router.route(url)).thenReturn(checker);
+    lenient().when(checker.type()).thenReturn("github");
+    when(checker.fetchLastActivity(url)).thenReturn(SEEN); // обновлений нет — короткий путь
+    when(polling.findBatch(any(), any(), anyInt())).thenReturn(List.of(link)).thenReturn(List.of());
+
+    scheduler.poll();
+
+    Timer timer = registry.get("scrapper.scrape.duration").tag("type", "github").timer();
+    assertThat(timer.count()).isEqualTo(1);
+  }
+
+  @Test
+  void recordsScrapeDurationTimerEvenWhenFetchFails() {
+    URI url = URI.create("https://github.com/octocat/Hello-World");
+    Link link = link(1L, url, SEEN);
+
+    lenient().when(router.route(url)).thenReturn(checker);
+    lenient().when(checker.type()).thenReturn("github");
+    when(checker.fetchLastActivity(url)).thenThrow(new RuntimeException("API недоступен"));
+    when(polling.findBatch(any(), any(), anyInt())).thenReturn(List.of(link)).thenReturn(List.of());
+
+    scheduler.poll(); // checkOneGuarded ловит RuntimeException — poll() не должен упасть
+
+    Timer timer = registry.get("scrapper.scrape.duration").tag("type", "github").timer();
+    assertThat(timer.count()).isEqualTo(1);
+  }
+
+  @Test
+  void recordsSeparateTimersPerType() {
+    URI githubUrl = URI.create("https://github.com/octocat/Hello-World");
+    URI soUrl = URI.create("https://stackoverflow.com/questions/1");
+    Link githubLink = link(1L, githubUrl, SEEN);
+    Link soLink = link(2L, soUrl, SEEN);
+
+    UpdateChecker githubChecker = mock(UpdateChecker.class);
+    UpdateChecker soChecker = mock(UpdateChecker.class);
+    lenient().when(githubChecker.type()).thenReturn("github");
+    lenient().when(soChecker.type()).thenReturn("stackoverflow");
+    lenient().when(githubChecker.fetchLastActivity(githubUrl)).thenReturn(SEEN);
+    lenient().when(soChecker.fetchLastActivity(soUrl)).thenReturn(SEEN);
+    lenient().when(router.route(githubUrl)).thenReturn(githubChecker);
+    lenient().when(router.route(soUrl)).thenReturn(soChecker);
+
+    when(polling.findBatch(any(), any(), anyInt()))
+        .thenReturn(List.of(githubLink, soLink))
+        .thenReturn(List.of());
+
+    scheduler.poll();
+
+    assertThat(registry.get("scrapper.scrape.duration").tag("type", "github").timer().count())
+        .isEqualTo(1);
+    assertThat(
+            registry.get("scrapper.scrape.duration").tag("type", "stackoverflow").timer().count())
+        .isEqualTo(1);
   }
 }
