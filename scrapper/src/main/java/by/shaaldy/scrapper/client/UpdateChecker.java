@@ -11,4 +11,6 @@ public interface UpdateChecker {
   Instant fetchLastActivity(URI url);
 
   UpdateDetails fetchDetails(URI url);
+
+  String type();
 }

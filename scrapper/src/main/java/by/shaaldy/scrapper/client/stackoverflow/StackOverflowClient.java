@@ -74,6 +74,11 @@ public class StackOverflowClient implements UpdateChecker {
         .orElseGet(() -> new UpdateDetails(title, null, null, null));
   }
 
+  @Override
+  public String type() {
+    return "stackoverflow";
+  }
+
   private StackOverflowResponse getQuestion(long id, String key) {
     return decorate("stackoverflow-getQuestion", () -> api.getQuestion(id, "stackoverflow", key));
   }

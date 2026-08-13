@@ -63,6 +63,11 @@ public class GitHubClient implements UpdateChecker {
         .orElseGet(() -> new UpdateDetails(null, null, null, null));
   }
 
+  @Override
+  public String type() {
+    return "github";
+  }
+
   private GitHubRepoResponse getRepository(String owner, String repo) {
     return decorate("github-getRepository", () -> api.getRepository(owner, repo));
   }
