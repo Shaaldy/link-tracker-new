@@ -11,9 +11,6 @@ import com.pengrad.telegrambot.model.Chat;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 
-import by.shaaldy.bot.command.CommandDispatcher;
-import by.shaaldy.bot.dialog.DialogHandler;
-import by.shaaldy.bot.dialog.DialogStateHolder;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 class UpdateListenerTest {
@@ -29,11 +26,7 @@ class UpdateListenerTest {
     when(messageRouter.route(anyLong(), anyString())).thenReturn("ok");
 
     UpdateListener listener =
-            new UpdateListener(
-                    telegramBot,
-                    messageSender,
-                    messageRouter,
-                    registry);
+        new UpdateListener(telegramBot, messageSender, messageRouter, registry);
 
     for (int i = 0; i < messageCount; i++) {
       listener.handle(update(555L + i, "/help"));
