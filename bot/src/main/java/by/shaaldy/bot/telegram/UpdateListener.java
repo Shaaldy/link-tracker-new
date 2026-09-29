@@ -8,12 +8,8 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
 
-import by.shaaldy.bot.command.CommandDispatcher;
-import by.shaaldy.bot.dialog.DialogHandler;
-import by.shaaldy.bot.dialog.DialogStateHolder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
