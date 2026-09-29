@@ -23,21 +23,17 @@ class UpdateListenerTest {
   void incrementsUserMessagesCounterForEachMessage(int messageCount) {
     TelegramBot telegramBot = mock(TelegramBot.class);
     MessageSender messageSender = mock(MessageSender.class);
-    CommandDispatcher commandDispatcher = mock(CommandDispatcher.class);
-    DialogStateHolder dialogStateHolder = new DialogStateHolder();
-    DialogHandler dialogHandler = mock(DialogHandler.class);
+    MessageRouter messageRouter = mock(MessageRouter.class);
     SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
-    when(commandDispatcher.dispatch(anyLong(), anyString())).thenReturn("ok");
+    when(messageRouter.route(anyLong(), anyString())).thenReturn("ok");
 
     UpdateListener listener =
-        new UpdateListener(
-            telegramBot,
-            messageSender,
-            commandDispatcher,
-            dialogStateHolder,
-            dialogHandler,
-            registry);
+            new UpdateListener(
+                    telegramBot,
+                    messageSender,
+                    messageRouter,
+                    registry);
 
     for (int i = 0; i < messageCount; i++) {
       listener.handle(update(555L + i, "/help"));

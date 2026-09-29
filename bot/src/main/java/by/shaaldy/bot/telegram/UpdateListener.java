@@ -1,5 +1,7 @@
 package by.shaaldy.bot.telegram;
 
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import com.pengrad.telegrambot.TelegramBot;
@@ -19,27 +21,21 @@ import lombok.extern.slf4j.Slf4j;
 public class UpdateListener {
   private final TelegramBot telegramBot;
   private final MessageSender messageSender;
-  private final CommandDispatcher commandDispatcher;
-  private final DialogStateHolder dialogStateHolder;
-  private final DialogHandler dialogHandler;
+  private final MessageRouter messageRouter;
   private final Counter userMessagesCounter;
 
   public UpdateListener(
       TelegramBot telegramBot,
       MessageSender messageSender,
-      CommandDispatcher commandDispatcher,
-      DialogStateHolder dialogStateHolder,
-      DialogHandler dialogHandler,
+      MessageRouter messageRouter,
       MeterRegistry registry) {
     this.telegramBot = telegramBot;
     this.messageSender = messageSender;
-    this.commandDispatcher = commandDispatcher;
-    this.dialogStateHolder = dialogStateHolder;
-    this.dialogHandler = dialogHandler;
+    this.messageRouter = messageRouter;
     this.userMessagesCounter = registry.counter("bot.user.messages");
   }
 
-  @PostConstruct
+  @EventListener(ApplicationReadyEvent.class)
   public void start() {
     telegramBot.setUpdatesListener(
         updates -> {
@@ -58,11 +54,7 @@ public class UpdateListener {
     log.info("Received message from chat {}: {}", chatId, text);
 
     userMessagesCounter.increment();
-
-    String response =
-        dialogStateHolder.isInDialog(chatId)
-            ? dialogHandler.handle(chatId, text)
-            : commandDispatcher.dispatch(chatId, text);
+    String response = messageRouter.route(chatId, text);
     messageSender.send(chatId, response);
   }
 }
