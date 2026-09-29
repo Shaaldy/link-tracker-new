@@ -6,10 +6,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import by.shaaldy.bot.dialog.utils.Messages;
 import org.springframework.stereotype.Component;
 
 import by.shaaldy.bot.dialog.step.DialogStep;
+import by.shaaldy.bot.dialog.utils.Messages;
 
 @Component
 public class DialogHandler {

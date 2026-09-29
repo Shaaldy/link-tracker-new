@@ -2,11 +2,11 @@ package by.shaaldy.bot.dialog.step;
 
 import java.net.URI;
 
-import by.shaaldy.bot.dialog.utils.Messages;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 
 import by.shaaldy.bot.dialog.*;
+import by.shaaldy.bot.dialog.utils.Messages;
 import by.shaaldy.bot.dto.scrapper.LinkResponse;
 import by.shaaldy.bot.dto.scrapper.RemoveLinkRequest;
 import by.shaaldy.bot.exception.ScrapperApiException;
